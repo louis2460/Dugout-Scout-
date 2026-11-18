@@ -469,7 +469,8 @@ let state = {game:'all', hitter:'all', runner:'all'};
 let draft = {games:[{label:'G1',text:''}], opp:null};
 let model=null, modelId=null, fullModel=null, fullId=null;
 let rosters = store.get(ROSTER,{});
-function roster(id){ id=id||activeReport().id; const r=rosters[id]=rosters[id]||{removed:[],added:[],info:{}}; r.removed=r.removed||[]; r.added=r.added||[]; r.info=r.info||{}; return r; }
+function roster(id){ id=id||activeReport().id; const r=rosters[id]=rosters[id]||{removed:[],added:[],deleted:[],info:{}}; r.removed=r.removed||[]; r.added=r.added||[]; r.deleted=r.deleted||[]; r.info=r.info||{}; return r; }
+function outList(id){ const R=roster(id); return R.removed.concat(R.deleted); }
 function saveRoster(){ store.set(ROSTER,rosters); }
 function pinfo(n){ return roster().info[n]||{}; }
 function label(n){ const i=pinfo(n); return (i.num?'#'+i.num+' ':'')+n; }
@@ -479,14 +480,14 @@ function allReports(){ return [SAMPLE].concat(reports); }
 function activeReport(){ const id=store.get(ACTIVE,SAMPLE.id); return allReports().find(r=>r.id===id)||SAMPLE; }
 function setActive(id){ store.set(ACTIVE,id); model=null; fullModel=null; state={game:'all',hitter:'all',runner:'all'}; }
 function getFull(){ const r=activeReport(), key=r.id+'|'+r.games.length; if(!fullModel||fullId!==key){ const parsed=r.games.map((g,i)=>ENGINE.parseGame(g.text,g.label||('G'+(i+1)))).filter(p=>p.ok); fullModel=ENGINE.build(parsed,r.opp); fullId=key; } return fullModel; }
-function hitterNames(M){ const R=roster(); const names=Object.keys(M.hitters); R.added.forEach(n=>{ if(!names.includes(n) && !R.removed.includes(n)) names.push(n); }); return names; }
+function hitterNames(M){ const R=roster(); const names=Object.keys(M.hitters); R.added.forEach(n=>{ if(!names.includes(n) && !R.removed.includes(n) && !R.deleted.includes(n)) names.push(n); }); return names; }
 function hitterOf(M,n){ return M.hitters[n]||stubHitter(n); }
 function getModel(){
   const r=activeReport();
-  const key=r.id+'|'+r.games.length+'|'+roster(r.id).removed.join(',');
+  const key=r.id+'|'+r.games.length+'|'+outList(r.id).join(',');
   if (!model || modelId!==key){
     const parsed=r.games.map((g,i)=>ENGINE.parseGame(g.text, g.label||('G'+(i+1)))).filter(p=>p.ok);
-    model=ENGINE.build(parsed, r.opp, {exclude:roster(r.id).removed}); modelId=key;
+    model=ENGINE.build(parsed, r.opp, {exclude:outList(r.id)}); modelId=key;
   }
   return model;
 }
@@ -618,7 +619,7 @@ function viewRoster(){
   const pit={}; F.pitchers.forEach(p=>{ (pit[p.n]=pit[p.n]||[]).push(p); });
   const runs={}; F.steals.forEach(s=>{ runs[s.r]=(runs[s.r]||0)+1; });
   const found=[...new Set(Object.keys(F.hitters).concat(Object.keys(pit),Object.keys(runs)))];
-  const all=found.concat(R.added.filter(n=>!found.includes(n)));
+  const all=found.filter(n=>!R.deleted.includes(n)).concat(R.added.filter(n=>!found.includes(n)));
   const what=n=>{ const b=[]; const H=F.hitters[n]; if(H) b.push(`${H.pa.length} PA, ${H.line}`); if(pit[n]) b.push('Pitched '+pit[n].map(p=>p.ip+' IP ('+p.g+')').join(', ')); if(runs[n]&&!H) b.push(runs[n]+' steal attempt'+(runs[n]>1?'s':'')+' as a runner'); return b.length?b.join(' · '):'Added by you; no plays yet'; };
   const rows=all.map((n,i)=>{ const inf=R.info[n]||{}, on=!R.removed.includes(n), added=!found.includes(n);
     return `<tr><td><input type="checkbox" data-inc="${esc(n)}" ${on?'checked':''} aria-label="Include ${esc(n)} in the report"></td><td style="${on?'':'opacity:.55'}"><b>${esc(n)}</b></td>
@@ -626,11 +627,12 @@ function viewRoster(){
     <td><input type="text" data-info="pos" data-name="${esc(n)}" value="${esc(inf.pos||'')}" style="min-width:0;width:80px" placeholder="—" aria-label="Position for ${esc(n)}"></td>
     <td><select data-info="bats" data-name="${esc(n)}" style="min-width:0" aria-label="Bats for ${esc(n)}">${['','R','L','S'].map(v=>`<option value="${v}" ${inf.bats===v?'selected':''}>${v||'—'}</option>`).join('')}</select></td>
     <td><input type="text" data-info="notes" data-name="${esc(n)}" value="${esc(inf.notes||'')}" style="min-width:200px;width:100%" placeholder="Anything coaches should know" aria-label="Notes for ${esc(n)}"></td>
-    <td style="font-size:14px;color:var(--muted)">${esc(what(n))}</td><td>${added?`<button type="button" class="btn" data-delplayer="${esc(n)}">Delete</button>`:''}</td></tr>`; }).join('');
+    <td style="font-size:14px;color:var(--muted)">${esc(what(n))}</td><td><button type="button" class="btn" data-delplayer="${esc(n)}">Delete</button></td></tr>`; }).join('');
   const out=R.removed.length;
-  return `<section class="below"><h2>Roster</h2><p class="note">Uncheck a player to remove him from every tab and from the game plan. Check him again to bring him back. Numbers, positions, bats and notes show up on the hitter tabs. Changes save automatically in this browser.</p>
+  return `<section class="below"><h2>Roster</h2><p class="note">Uncheck a player to leave him out for now, or click Delete to take him off the roster. Either way he’s removed from every tab and from the game plan. Numbers, positions, bats and notes show up on the hitter tabs. Changes save automatically in this browser.</p>
   ${out?`<p class="note"><b>${out} player${out>1?'s':''} removed:</b> ${R.removed.map(esc).join(', ')}</p>`:''}
-  <div class="tablewrap"><table><thead><tr><th>In report</th><th>Player</th><th>#</th><th>Pos.</th><th>Bats</th><th>Coach’s notes</th><th>From the games</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <div class="tablewrap"><table><thead><tr><th>In report</th><th>Player</th><th>#</th><th>Pos.</th><th>Bats</th><th>Coach’s notes</th><th>From the games</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${R.deleted.length?`<div style="margin-top:14px"><h3 style="font:600 20px/1.2 'Barlow Condensed',sans-serif;margin:0 0 6px">Deleted players</h3><p class="note">Click Restore to put a player back on the roster and in the report.</p><div style="display:flex;flex-wrap:wrap;gap:8px">${R.deleted.map(n=>`<span class="tag" style="font-size:16px;padding:4px 8px">${esc(n)} <button type="button" class="btn" data-restore="${esc(n)}" style="padding:2px 8px;margin-left:6px">Restore</button></span>`).join('')}</div></div>`:''}</section>
   <section class="below"><h2>Add a player</h2><p class="note">For someone who hasn’t shown up in a play-by-play yet. Spell the name the way GameChanger will, so his plays match up when you add a game.</p>
   <div class="filters"><label>Name <input type="text" id="np-name" placeholder="First Last"></label><label># <input type="text" id="np-num" style="min-width:0;width:60px"></label><label>Pos. <input type="text" id="np-pos" style="min-width:0;width:80px"></label>
   <label>Bats <select id="np-bats" style="min-width:0"><option value="">—</option><option>R</option><option>L</option><option>S</option></select></label></div>
@@ -700,9 +702,15 @@ function wire(v){
   if (v==='roster'){
     app.querySelectorAll('[data-inc]').forEach(c=>c.onchange=()=>{ const R=roster(), n=c.dataset.inc; R.removed=R.removed.filter(x=>x!==n); if(!c.checked) R.removed.push(n); saveRoster(); model=null; render(); });
     app.querySelectorAll('[data-info]').forEach(f=>f.onchange=()=>{ const R=roster(), n=f.dataset.name; R.info[n]=R.info[n]||{}; R.info[n][f.dataset.info]=f.value.trim(); saveRoster(); });
-    app.querySelectorAll('[data-delplayer]').forEach(b=>b.onclick=()=>{ const R=roster(), n=b.dataset.delplayer; if(!confirm('Delete '+n+' from the roster?'))return; R.added=R.added.filter(x=>x!==n); R.removed=R.removed.filter(x=>x!==n); delete R.info[n]; saveRoster(); render(); });
+    app.querySelectorAll('[data-delplayer]').forEach(b=>b.onclick=()=>{ const R=roster(), n=b.dataset.delplayer, added=R.added.includes(n);
+      if(!confirm(added?'Delete '+n+' from the roster?':'Delete '+n+'? His plays will be left out of every tab. You can restore him at the bottom of the roster.'))return;
+      R.removed=R.removed.filter(x=>x!==n);
+      if(added){ R.added=R.added.filter(x=>x!==n); delete R.info[n]; } else if(!R.deleted.includes(n)) R.deleted.push(n);
+      saveRoster(); model=null; render(); });
+    app.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>{ const R=roster(), n=b.dataset.restore; R.deleted=R.deleted.filter(x=>x!==n); saveRoster(); model=null; render(); });
     $('#np-add').onclick=()=>{ const R=roster(), n=$('#np-name').value.trim().replace(/\s+/g,' '), msg=$('#np-msg'); const F=getFull();
       if(!n){ msg.className='err'; msg.textContent='Type the player’s name first.'; return; }
+      if(R.deleted.includes(n)){ R.deleted=R.deleted.filter(x=>x!==n); saveRoster(); model=null; render(); return; }
       const exists=R.added.includes(n)||F.hitters[n]||F.pitchers.some(p=>p.n===n);
       if(exists){ msg.className='err'; msg.textContent=n+' is already on the roster.'; return; }
       R.added.push(n); R.info[n]={num:$('#np-num').value.trim(),pos:$('#np-pos').value.trim(),bats:$('#np-bats').value,notes:$('#np-notes').value.trim()}; R.removed=R.removed.filter(x=>x!==n); saveRoster(); render(); };
