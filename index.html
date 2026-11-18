@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dugout Scout: baseball scouting reports from GameChanger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e7ece6; --panel:#ffffff; --ink:#15241c; --muted:#56675d; --line:#cdd6ce; --soft:#f1f4f0;
+  --board:#15241c; --board-ink:#f4f7f2; --board-muted:#b9c8bf; --hit:#f2c014; --hit-ink:#2a2100; --cs:#d9472f;
+  --grass:#2e6a3e; --grass2:#357548; --dirt:#b5875b; --chalk:#f4f7f2; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1813;--panel:#16241d;--ink:#e4ede6;--muted:#9bb0a3;--line:#2a3c33;--soft:#1c2c24;--board:#0a120e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1813;--panel:#16241d;--ink:#e4ede6;--muted:#9bb0a3;--line:#2a3c33;--soft:#1c2c24;--board:#0a120e;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--board)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 48px}
+header.board{background:var(--board);color:var(--board-ink)}
+header.board .wrap{padding-top:16px;padding-bottom:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font:700 20px/1 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;color:var(--hit);text-decoration:none;letter-spacing:.3px}
+.toplinks{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:600 15px "Source Sans 3",sans-serif;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
+.btn.ghost{background:transparent;color:var(--board-ink);border-color:#3a4f43}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+h1{font:700 clamp(34px,6vw,58px)/0.95 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;margin:18px 0 0;letter-spacing:.5px}
+.sub{color:var(--board-muted);font-size:15px;margin:6px 0 0}
+nav.tabs{display:flex;gap:2px;margin-top:18px;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{font:600 19px/1 "Barlow Condensed",sans-serif;color:#c9d6ce;text-decoration:none;padding:12px 16px 13px;white-space:nowrap;border-top:3px solid transparent}
+nav.tabs a:hover{color:#fff}
+nav.tabs a[aria-current="page"]{background:var(--bg);color:var(--ink);border-top-color:var(--hit)}
+a:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--hit);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;margin-top:24px}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.stage,.card,.below{background:var(--panel);border:1px solid var(--line);padding:16px}
+.below{margin-top:24px}
+.stage h2,.side h2,.below h2,.card h2{font:600 26px/1.1 "Barlow Condensed",sans-serif;margin:0 0 4px}
+.note{color:var(--muted);font-size:14px;margin:0 0 10px}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 12px}
+.filters label{font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
+select,input[type=text]{font:inherit;font-size:15px;color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:6px 8px;min-width:170px}
+textarea{width:100%;min-height:180px;font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:10px;resize:vertical}
+.seg{display:inline-flex;border:1px solid var(--line);flex-wrap:wrap}
+.seg button{font:600 15px "Source Sans 3",sans-serif;background:var(--soft);color:var(--ink);border:0;padding:6px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--board);color:var(--hit)}
+svg.field{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:5px}
+.side{display:flex;flex-direction:column;gap:16px}
+.plan{background:var(--board);color:var(--board-ink);padding:18px 18px 8px}
+.plan h2{color:var(--hit)}
+.plan .who{color:var(--board-muted);font-size:14px;margin:0 0 10px}
+.plan ol{margin:0;padding:0 0 0 20px}
+.plan li{margin:0 0 10px}
+.plan li b{color:#fff}
+.card h3{font:600 20px/1.2 "Barlow Condensed",sans-serif;margin:0 0 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--soft);padding:8px 10px}
+.stats b{display:block;font:700 26px/1 "Barlow Condensed",sans-serif}
+.stats span{font-size:13px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);background:var(--soft);white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font:700 15px "Barlow Condensed",sans-serif;padding:1px 7px;background:var(--soft);border:1px solid var(--line)}
+.tag.on{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
+.tag.sm{font-size:12px;padding:0 4px}
+tr.pick{cursor:pointer}
+tr.pick:hover td{background:var(--soft)}
+.tip{position:fixed;pointer-events:none;background:var(--board);color:var(--board-ink);padding:6px 10px;font-size:14px;max-width:260px;z-index:20;display:none;border-left:3px solid var(--hit)}
+.grid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px}
+.grid .h{font-size:13px;color:var(--muted);text-align:center;align-self:end}
+.grid .r{font-size:13px;color:var(--muted);align-self:center;padding-right:4px}
+.cell{padding:10px 6px;text-align:center;border:1px solid var(--line)}
+.cell b{display:block;font:700 28px/1 "Barlow Condensed",sans-serif}
+.cell span,.cell small{font-size:13px;color:var(--muted)}
+.cell small{display:block;font-size:12px;margin-top:4px}
+.tiles{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px}
+.tiles em{font:700 12px/18px "Barlow Condensed",sans-serif;font-style:normal;width:18px;height:18px;text-align:center;border:1px solid var(--line);color:var(--muted)}
+.tiles em.sw{background:var(--hit);border-color:var(--hit);color:var(--hit-ink)}
+.bars div{display:grid;grid-template-columns:150px 1fr 60px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bars .track{background:var(--soft);height:18px;position:relative}
+.bars .fill{position:absolute;inset:0 auto 0 0;background:var(--cs)}
+.bars .fill.ok{background:var(--grass2)}
+.steps{display:grid;gap:16px;margin-top:24px}
+.game{border:1px solid var(--line);background:var(--panel);padding:14px}
+.game header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.game header input{min-width:240px}
+.ok{color:var(--grass2);font-weight:600}
+.err{color:var(--cs);font-weight:600}
+.reports{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.report{border:1px solid var(--line);background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:6px}
+.report h3{font:600 22px/1.1 "Barlow Condensed",sans-serif;margin:0}
+.report .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.choice{display:flex;flex-wrap:wrap;gap:8px}
+.choice label{border:1px solid var(--line);padding:8px 12px;background:var(--soft);cursor:pointer;display:flex;gap:8px;align-items:center}
+footer{color:var(--muted);font-size:14px;margin-top:28px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+@media print{header.board .toplinks,nav.tabs,.filters,.btn{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<header class="board"><div class="wrap" id="head"></div></header>
+<main class="wrap" id="app"></main>
+<div class="tip" id="tip" role="status"></div>
+<script>
+/* Scouting engine: reads GameChanger play-by-play text and builds a scouting model. */
+const ENGINE = (() => {
+  const POS = {'pitcher':1,'catcher':2,'first baseman':3,'second baseman':4,'third baseman':5,'shortstop':6,'left fielder':7,'center fielder':8,'right fielder':9};
+  const POS_RE = /(pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)/g;
+  const SPOT = {1:[45,.2],2:[45,.07],3:[82,.36],4:[62,.48],5:[8,.36],6:[28,.48],7:[18,.75],8:[45,.8],9:[72,.75]};
+  const HALF_RE = /^(Top|Bottom)\s+(\d+)(?:st|nd|rd|th)\s*-\s*(.+)$/i;
+  const OUTS_RE = /^(\d)\s+Outs?$/i;
+  const SCORE_RE = /^[A-Za-z0-9.&' ]+\s\d+\s-\s[A-Za-z0-9.&' ]+\s\d+(?:\s*\|\s*(\d)\s+Outs?)?$/;
+  const VERB_RE = /^(.+?)\s(singles|doubles|triples|homers|hits a (?:home run|grand slam|ground ball|pop fly|line drive|fly ball|hard ground ball)|grounds|lines|flies|pops|strikes out|walks|is intentionally walked|is hit by pitch|out on|sacrifices|bunts|reaches|out at first|is out|hits into|hit by pitch)\b/;
+  const ord = n => n + (n%10===1&&n%100!==11?'st':n%10===2&&n%100!==12?'nd':n%10===3&&n%100!==13?'rd':'th');
+
+  function posList(str){ const out=[]; let m; POS_RE.lastIndex=0; while((m=POS_RE.exec(str))) out.push(POS[m[1]]); return out; }
+
+  function parsePitches(line){
+    const toks = line.replace(/\.\s*$/,'').split(/,\s*/);
+    const seq=[], runs=[], changes=[];
+    let wp=0, pb=0, scores=0;
+    toks.forEach(raw => {
+      const t = raw.trim();
+      let m;
+      if (/^Ball\s+\d+$/i.test(t)) seq.push('B');
+      else if (/^Strike\s+\d+\s+looking$/i.test(t)) seq.push('C');
+      else if (/^Strike\s+\d+\s+swinging$/i.test(t)) seq.push('S');
+      else if (/^Strike\s+\d+$/i.test(t)) seq.push('C');
+      else if (/^Foul(\s+bunt|\s+tip)?$/i.test(t)) seq.push('F');
+      else if (/^In play$/i.test(t)) seq.push('X');
+      else if ((m = t.match(/^(.+?)\s+steals\s+(2nd|3rd|home)/i))) runs.push({kind:'SB', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+caught stealing\s+(2nd|3rd|home)/i))) runs.push({kind:'CS', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+picked off at\s+(1st|2nd|3rd)/i))) runs.push({kind:'PO', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+in for pitcher\s+(.+)$/i))) changes.push(m[2].trim().replace(/\.$/,''));
+      else if ((m = t.match(/^Lineup changed:\s*(.+?)\s+in at pitcher/i))) changes.push(m[1].trim().replace(/\.$/,''));
+      if (/on wild pitch/i.test(t)) { wp++; m=t.match(/^(.+?)\s+(advances to|scores)/i); if(m) runs.push({kind:'WP', r:m[1], to:/scores/i.test(t)?'home':(t.match(/to (2nd|3rd)/i)||[])[1], at:seq.length}); }
+      if (/on passed ball/i.test(t)) { pb++; m=t.match(/^(.+?)\s+(advances to|scores)/i); if(m) runs.push({kind:'PB', r:m[1], to:/scores/i.test(t)?'home':(t.match(/to (2nd|3rd)/i)||[])[1], at:seq.length}); }
+      if (/\sscores\b/i.test(t)) scores++;
+    });
+    return {seq, runs, changes, wp, pb, scores};
+  }
+
+  function blocksFrom(lines){
+    const halves=[]; let half=null, ev=null;
+    for (const raw of lines){
+      const line = raw.trim(); if(!line) continue;
+      let m = line.match(HALF_RE);
+      if (m){ half={top:/^top$/i.test(m[1]), inning:+m[2], bat:m[3].trim(), events:[]}; halves.push(half); ev=null; continue; }
+      if (!half) continue;
+      if (/\sat bat$/i.test(line)) continue;
+      if (OUTS_RE.test(line) || SCORE_RE.test(line)){ if(ev){ const o=line.match(OUTS_RE)||line.match(SCORE_RE); if(o&&o[1]!==undefined) ev.outsAfter=+o[1]; } continue; }
+      const isText = /\.$/.test(line) || /,/.test(line);
+      if (!isText){ ev={title:line, lines:[]}; half.events.push(ev); continue; }
+      if (ev) ev.lines.push(line);
+    }
+    return halves;
+  }
+
+  function looksLikePitches(line){
+    const toks=line.replace(/\.\s*$/,'').split(/,\s*/);
+    return toks.some(t=>/^(Ball|Strike|Foul|In play)\b/i.test(t.trim())) || /^(Ball|Strike|Foul|In play|Pickoff|Courtesy|Lineup changed)/i.test(line);
+  }
+
+  function notation(ev, desc){
+    const t = ev.title.toLowerCase();
+    const chunks = desc.replace(/\.\s*$/,'').split(/,\s*/);
+    let chain = posList(chunks[0]);
+    for (let i=1;i<chunks.length;i++){ if (/^(pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)\b/i.test(chunks[i])) chain = chain.concat(posList(chunks[i])); else break; }
+    const errM = desc.match(/error by (pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)/i);
+    const errTail = (!/^error$/.test(t) && errM) ? ', E'+POS[errM[1].toLowerCase()] : '';
+    const bunt = /bunt/i.test(desc);
+    const rbi = chunks.slice(1).filter(c=>/\sscores\b/i.test(c) && !/error/i.test(c)).length + (/home run/.test(t)?1:0);
+    const rbiTag = rbi && !/^error$/.test(t) ? (rbi>1?` (${rbi} RBI)`:' (RBI)') : '';
+    const first = chain[0];
+    let res;
+    if (/^single$/.test(t)) res='1B'+(first?'-'+first:'');
+    else if (/^double$/.test(t)) res='2B'+(first?'-'+first:'');
+    else if (/^triple$/.test(t)) res='3B'+(first?'-'+first:'');
+    else if (/home run/.test(t)){ res='HR'; const fm=desc.match(/(left|center|right)[- ]?(?:center |field|fielder)/i); if(!chain.length&&fm) chain=[{left:7,center:8,right:9}[fm[1].toLowerCase()]]; }
+    else if (/intentional walk/.test(t)) res='IBB';
+    else if (/^walk$/.test(t)) res='BB';
+    else if (/hit by pitch/.test(t)) res='HBP';
+    else if (/dropped 3rd/.test(t)) res=/looking/i.test(desc)?'ꓘ (D3)':'K (D3)';
+    else if (/strikeout/.test(t)) res=/looking/i.test(desc)?'ꓘ':'K';
+    else if (/ground out/.test(t)) res= chain.length>1 ? chain.join('-') : (first? first+'U':'GO');
+    else if (/line out/.test(t)) res='L'+(first||'');
+    else if (/fly out/.test(t)) res='F'+(first||'');
+    else if (/pop out/.test(t)) res='P'+(first||'');
+    else if (/sacrifice fly/.test(t)) res='SF'+(first||'');
+    else if (/sacrifice bunt|sacrifice/.test(t)) res='SAC'+(chain.length?' '+chain.join('-'):'');
+    else if (/fielder.?s choice/.test(t)) res='FC'+(chain.length?' '+chain.join('-'):'');
+    else if (/double play/.test(t)) res=(/lines into|line drive/i.test(desc)?'L':'')+(chain.length?chain.join('-')+' ':'')+'DP';
+    else if (/triple play/.test(t)) res=(/lines into|line drive/i.test(desc)?'L':'')+(chain.length?chain.join('-')+' ':'')+'TP';
+    else if (/^error$/.test(t)) res= errM ? 'E'+POS[errM[1].toLowerCase()] : 'E';
+    else res=ev.title;
+    if (bunt && /^(1B|E)/.test(res)) res+=' (bunt)';
+    return {res: res+errTail+rbiTag, chain, rbi};
+  }
+
+  function battedType(title, desc){
+    const d=desc.toLowerCase(), t=title.toLowerCase();
+    if (/bunt|sacrifices to/.test(d) || /sacrifice bunt/.test(t)) return 'BU';
+    if (/pop fly|pops out/.test(d)) return 'PU';
+    if (/line drive|lines out|lines into/.test(d)) return 'LD';
+    if (/fly ball|flies out|sacrifice fly/.test(d)) return 'FB';
+    if (/ground ball|grounds|ground into/.test(d)) return 'GB';
+    if (/home run/.test(t)) return 'FB';
+    return null;
+  }
+
+  function spot(res, type, chain){
+    const p = chain[0];
+    if (/^HR/.test(res)) return [p?SPOT[p][0]:45,1.06];
+    if (!p) return type==='BU'?[45,.12]:null;
+    let [a,d] = SPOT[p];
+    const outfield = p>=7;
+    if (/^1B/.test(res)) d = outfield ? (type==='GB'?.62:.7) : (p<=2?.2:.5);
+    else if (/^2B/.test(res)) d = outfield ? .92 : .5;
+    else if (/^3B/.test(res)) d = outfield ? .98 : .5;
+    if (type==='BU') d = Math.min(d,.22);
+    return [a,d];
+  }
+
+  function parseGame(text, label){
+    const halves = blocksFrom(text.split(/\r?\n/));
+    if (!halves.length) return {ok:false, error:'No innings found. Paste the play-by-play starting with a line like “Top 1st - Team Name”.'};
+    const rank = h => h.inning*2 + (h.top?0:1);
+    if (rank(halves[0]) > rank(halves[halves.length-1])) { halves.reverse(); halves.forEach(h=>h.events.reverse()); }
+    else if (halves.length===1 && halves[0].events.length>1) { /* single half: leave as is */ }
+    const teams=[...new Set(halves.map(h=>h.bat))];
+    const out={ok:true, label, teams, halves:[]};
+    for (const h of halves){
+      let outs=0; const H={top:h.top, inning:h.inning, bat:h.bat, events:[]};
+      for (const ev of h.events){
+        if (!ev.lines.length) continue;
+        let pitchLine='', desc='';
+        if (ev.lines.length>=2){ pitchLine=ev.lines[0]; desc=ev.lines[ev.lines.length-1]; }
+        else if (looksLikePitches(ev.lines[0])) pitchLine=ev.lines[0]; else desc=ev.lines[0];
+        const P = pitchLine ? parsePitches(pitchLine) : {seq:[],runs:[],changes:[],wp:0,pb:0,scores:0};
+        if (/hit by pitch/i.test(ev.title)) P.seq.push('H');
+        const vm = desc.match(VERB_RE);
+        const batter = vm ? vm[1].trim() : null;
+        const N = desc ? notation(ev, desc) : {res:ev.title, chain:[], rbi:0};
+        const type = desc ? battedType(ev.title, desc) : null;
+        const inPlay = P.seq[P.seq.length-1]==='X';
+        const outsBefore = outs;
+        const outsAfter = ev.outsAfter!==undefined ? ev.outsAfter : outs;
+        outs = outsAfter;
+        const pm = desc.match(/,\s*([^,]+?)\s+pitching\b/);
+        const fieldP = desc.match(/\bpitcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/);
+        const descScores = (desc.match(/\sscores\b/g)||[]).length;
+        const descRuns = [];
+        desc.replace(/\.\s*$/,'').split(/,\s*/).slice(1).forEach(c=>{ let m;
+          if ((m=c.match(/^(.+?)\s+out advancing to\s+(2nd|3rd|home|1st)/i))) descRuns.push({kind:'OA', r:m[1], to:m[2]});
+          else if ((m=c.match(/^(.+?)\s+held up at\s+(2nd|3rd)/i))) descRuns.push({kind:'HELD', r:m[1], to:m[2]});
+          else if ((m=c.match(/^(.+?)\s+advances to\s+(2nd|3rd)\s+on (?:an\s+)?error/i))) descRuns.push({kind:'E', r:m[1], to:m[2]});
+        });
+        const scorers=[]; (pitchLine+', '+desc).split(/,\s*/).forEach(c=>{const m=c.match(/^(.+?)\s+scores\b/i); if(m) scorers.push(m[1].trim());}); const isHR=/home run/i.test(ev.title); if(isHR&&batter) scorers.push(batter);
+        H.events.push({
+          title:ev.title, desc, pitchLine, batter, seq:P.seq.join(''), runs:P.runs, descRuns, changes:P.changes,
+          res:N.res, chain:N.chain, rbi:N.rbi, type, inPlay, spot: inPlay && type ? spot(N.res,type,N.chain) : null,
+          outsBefore, outsAfter, outsMade: Math.max(0,outsAfter-outsBefore),
+          wp:P.wp, pb:P.pb, runsScored: P.scores+descScores+(isHR?1:0), scorers,
+          pitcherNamed: pm ? pm[1].trim().replace(/\.$/,'') : (fieldP ? fieldP[1].trim().replace(/\.$/,'') : null)
+        });
+      }
+      out.halves.push(H);
+    }
+    return out;
+  }
+
+  /* Build the scouting model for one opponent across many games */
+  function build(games, opp){
+    const SW = c => c==='S'||c==='F'||c==='X';
+    const pas=[], bip=[], steals=[], other=[], hitters={}, pitchers={}, scored={};
+    const defense={sbAgainst:0, csAgainst:0, pb:0, wp:0, errors:0, catcher:null, oppErrors:[]};
+    games.forEach((g,gi)=>{
+      const gl = g.label || ('G'+(gi+1));
+      let lastP = null;
+      // assign pitchers for halves where opp is fielding
+      const fielding = g.halves.filter(h=>h.bat!==opp);
+      const flat = []; fielding.forEach(h=>h.events.forEach(e=>flat.push(e)));
+      flat.forEach(e=>{ if(e.changes.length) e._chg=e.changes[e.changes.length-1]; });
+      let cur=null; flat.forEach(e=>{ if(e._chg) cur=e._chg; e.pitcher = e.pitcherNamed || cur || null; if(e.pitcherNamed) cur=e.pitcherNamed; });
+      for (let i=flat.length-1, nxt=null;i>=0;i--){ if(flat[i].pitcher) nxt=flat[i].pitcher; else flat[i].pitcher=nxt; }
+      fielding.forEach(h=>h.events.forEach(e=>{
+        const p=e.pitcher||'Unknown pitcher'; const P=pitchers[p+'|'+gl]=pitchers[p+'|'+gl]||{n:p,g:gl,bf:0,outs:0,h:0,r:0,bb:0,hbp:0,k:0,kl:0,wp:0,pitches:0,firstStrikes:0};
+        if (e.batter){ P.bf++; P.pitches+=e.seq.length; if(e.seq[0]&&e.seq[0]!=='B'&&e.seq[0]!=='H') P.firstStrikes++; }
+        P.outs+=e.outsMade; P.r+=e.runsScored; P.wp+=e.wp;
+        if (/^(1B|2B|3B|HR)/.test(e.res)) P.h++;
+        if (/^(BB|IBB)/.test(e.res)) P.bb++;
+        if (/^HBP/.test(e.res)) P.hbp++;
+        if (/^K/.test(e.res)) P.k++;
+        if (/^ꓘ/.test(e.res)) { P.k++; P.kl++; }
+        defense.pb+=e.pb; defense.wp+=e.wp;
+        e.runs.forEach(r=>{ if(r.kind==='SB') defense.sbAgainst++; if(r.kind==='CS') defense.csAgainst++; });
+        const em=e.desc.match(/error by (pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/i);
+        if (em){ defense.errors++; defense.oppErrors.push({g:gl, inn:ord(h.inning), who:em[2].replace(/\.$/,''), pos:POS[em[1].toLowerCase()]}); }
+        const pl=e.pitchLine.match(/error by catcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/);
+        if (pl){ defense.errors++; defense.oppErrors.push({g:gl, inn:ord(h.inning), who:pl[1].replace(/\.$/,''), pos:2}); }
+        const cm=(e.desc+' '+e.pitchLine).match(/catcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/); if(cm) defense.catcher=cm[1].replace(/\.$/,'');
+      }));
+      // opponent batting
+      g.halves.filter(h=>h.bat===opp).forEach(h=>h.events.forEach(e=>{
+        const inn=ord(h.inning);
+        e.scorers.forEach(s=>{ scored[s]=(scored[s]||0)+1; });
+        e.runs.forEach(r=>{
+          const k=r.at; let b=0,s=0; const upto = k>0 ? k-1 : 0;
+          for (let i=0;i<upto;i++){ const c=e.seq[i]; if(c==='B') b++; else if(c==='C'||c==='S'||(c==='F'&&s<2)) s++; }
+          const pitchC = k>0 ? e.seq[k-1] : e.seq[0];
+          const name={B:'Ball',C:'Called strike',S:'Swinging strike',F:'Foul',X:'In play',H:'Hit by pitch'}[pitchC]||'—';
+          const from = r.to==='2nd'?1:r.to==='3rd'?2:r.to==='home'?3:0;
+          if (r.kind==='SB'||r.kind==='CS') steals.push({g:gl,inn,r:r.r,from,to:from+1,res:r.kind,cnt:`${b}-${s}`,pitch:name,bat:e.batter||'',outs:e.outsBefore});
+          else if (r.kind==='PO') other.push({g:gl,inn,r:r.r,play:`Picked off at ${r.to}`});
+          else other.push({g:gl,inn,r:r.r,play:`${r.to==='home'?'Scored':'Took '+r.to} on a ${r.kind==='WP'?'wild pitch':'passed ball'}`});
+        });
+        e.descRuns.forEach(r=>other.push({g:gl,inn,r:r.r,play: r.kind==='OA'?`Thrown out advancing to ${r.to}`: r.kind==='HELD'?`Held at ${r.to}`:`Took ${r.to} on an error`}));
+        if (!e.batter) return;
+        const pa={g:gl,h:e.batter,inn,seq:e.seq,res:e.res,type:e.type,outs:e.outsBefore};
+        pas.push(pa);
+        const H=hitters[e.batter]=hitters[e.batter]||{name:e.batter,pa:[],games:new Set(),spots:[]};
+        H.pa.push(pa); H.games.add(gl);
+        if (e.inPlay && e.spot) bip.push({g:gl,h:e.batter,inn,type:e.type,res:e.res,a:e.spot[0],d:e.spot[1],on:/^(1B|2B|3B|HR|E)/.test(e.res)});
+      }));
+    });
+    // hitter lines
+    Object.values(hitters).forEach(H=>{
+      let ab=0,h=0,bb=0,hbp=0,k=0,kl=0,e=0,rbi=0,sac=0; const xbh=[];
+      H.pa.forEach(p=>{ const r=p.res;
+        const walk=/^(BB|IBB)/.test(r), hp=/^HBP/.test(r), sc=/^(SAC|SF)/.test(r);
+        if(walk) bb++; else if(hp) hbp++; else if(sc) sac++; else ab++;
+        if(/^(1B|2B|3B|HR)/.test(r)) h++;
+        const x=r.match(/^(2B|3B|HR)/); if(x) xbh.push(x[1]);
+        if(/^K/.test(r)) k++; if(/^ꓘ/.test(r)) kl++;
+        if(/^E/.test(r)) e++;
+        const m=r.match(/\((\d+ )?RBI\)/); if(m) rbi+= m[1]?+m[1]:1;
+      });
+      const sb=steals.filter(s=>s.r===H.name&&s.res==='SB').length, cs=steals.filter(s=>s.r===H.name&&s.res==='CS').length;
+      const parts=[`${h}-for-${ab}`].concat(xbh, bb?[(bb>1?bb+' ':'')+'BB']:[], hbp?[(hbp>1?hbp+' ':'')+'HBP']:[], k?[(k>1?k+' ':'')+'K']:[], kl?[(kl>1?kl+' ':'')+'ꓘ']:[], e?[(e>1?e+' ':'')+'E']:[], rbi?[(rbi>1?rbi+' ':'')+'RBI']:[], scored[H.name]?[(scored[H.name]>1?scored[H.name]+' ':'')+'R']:[], sb?[(sb>1?sb+' ':'')+'SB']:[], cs?[(cs>1?cs+' ':'')+'CS']:[]);
+      H.line=parts.join(', '); H.ab=ab; H.h=h; H.bb=bb; H.hbp=hbp; H.k=k+kl; H.kl=kl; H.xbh=xbh; H.sb=sb; H.cs=cs; H.r=scored[H.name]||0;
+      H.onBase = H.pa.filter(p=>/^(1B|2B|3B|HR|BB|IBB|HBP|E|FC)/.test(p.res)).length;
+      const ps=[]; H.pa.forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{ps.push({b,s,c,k});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+      H.pitches=ps.length; H.swings=ps.filter(x=>SW(x.c)).length; H.whiffs=ps.filter(x=>x.c==='S').length; H.called=ps.filter(x=>x.c==='C').length;
+      H.fp=H.pa.filter(p=>p.seq.length).length; H.fps=H.pa.filter(p=>SW(p.seq[0])).length;
+      const mine=bip.filter(b=>b.h===H.name); H.bip=mine.length;
+      H.left=mine.filter(b=>b.a<35).length; H.right=mine.filter(b=>b.a>55).length; H.mid=H.bip-H.left-H.right;
+      H.bunts=H.pa.filter(p=>p.type==='BU').length;
+      H.read=hitterRead(H); H.shade=hitterShade(H,mine);
+    });
+    const runners={};
+    steals.forEach(s=>{const R=runners[s.r]=runners[s.r]||{n:s.r,att:0,sb:0,cs:0,zero:0}; R.att++; if(s.res==='SB')R.sb++; else R.cs++; if(s.cnt==='0-0')R.zero++;});
+    Object.values(hitters).forEach(H=>{ if(H.onBase && !runners[H.name]) runners[H.name]={n:H.name,att:0,sb:0,cs:0,zero:0}; });
+    Object.values(runners).forEach(R=>{ R.onb = hitters[R.n]?hitters[R.n].onBase:null; R.read = runnerRead(R); });
+    const pitcherList=Object.values(pitchers).filter(p=>p.bf>0);
+    pitcherList.forEach(p=>{ p.ip=Math.floor(p.outs/3)+'.'+(p.outs%3); p.note=pitcherNote(p); });
+    const model={opp, games:games.map((g,i)=>g.label||('G'+(i+1))), pas, bip, steals, other, hitters, runners, pitchers:pitcherList, defense};
+    model.plan=gamePlan(model);
+    return model;
+  }
+
+  function pct(a,n){ return n?Math.round(a/n*100):0; }
+  function first(n){ return n; }
+  function hitterRead(H){
+    const r=[];
+    if (H.fp>=2){ if (H.fps/H.fp>=0.5) r.push(`Swings early: went after ${H.fps} of ${H.fp} first pitches.`); else if (H.fps/H.fp<=0.25) r.push(`Takes the first pitch: swung at ${H.fps} of ${H.fp}.`); }
+    if (H.pitches>=8){ const s=H.swings/H.pitches; if(s<=0.3) r.push(`Very patient. Swung at ${H.swings} of ${H.pitches} pitches.`); else if(s>=0.55) r.push(`Aggressive. Swung at ${H.swings} of ${H.pitches} pitches.`); }
+    if (H.whiffs>=3) r.push(`Swings and misses: ${H.whiffs} swinging strikes.`);
+    if (H.kl>=1 && H.kl===H.k) r.push(`${H.kl>1?'Both':'His'} strikeout${H.kl>1?'s were':' was'} looking (ꓘ).`);
+    if (H.bunts) r.push(`Bunted ${H.bunts} time${H.bunts>1?'s':''}.`);
+    if (H.xbh.length) r.push(`Extra-base hits: ${H.xbh.join(', ')}.`);
+    if (!r.length) r.push(`${H.pa.length} plate appearance${H.pa.length>1?'s':''}: ${H.pa.map(p=>p.res).join(', ')}.`);
+    return r.join(' ');
+  }
+  function hitterShade(H,mine){
+    if (!H.bip) return 'No balls in play yet.';
+    const deep = mine.filter(b=>b.d>=0.85).length;
+    let s;
+    if (H.bip>=2 && H.left/H.bip>=0.6) s=`Shade him to the left side. ${H.left} of ${H.bip} balls in play went to third, short or left.`;
+    else if (H.bip>=2 && H.right/H.bip>=0.6) s=`Shade him to the right side. ${H.right} of ${H.bip} balls in play went to first, second or right.`;
+    else s=`Play him straight up. ${H.left} left, ${H.mid} middle, ${H.right} right.`;
+    if (deep) s+=' Play the outfield deep; he has hit it to the fence.';
+    if (H.bunts) s+=' Corners in when he squares.';
+    return s;
+  }
+  function runnerRead(R){
+    if (!R.att) return R.onb ? `Has not run in ${R.onb} time${R.onb>1?'s':''} on base.` : 'No steal attempts.';
+    return `${R.sb} for ${R.att} stealing${R.zero?`, ${R.zero} on the first pitch (0-0)`:''}.`;
+  }
+  function pitcherNote(p){
+    const free=p.bb+p.hbp; const n=[];
+    if (p.bf) { const rate=free/p.bf; if(rate>=0.25) n.push(`Walked or hit ${free} of ${p.bf}.`); else if(rate<=0.1) n.push(`Throws strikes: ${free} free bases in ${p.bf} batters.`); }
+    if (p.bf>=4) n.push(`First-pitch strikes on ${p.firstStrikes} of ${p.bf}.`);
+    if (p.kl>=2 && p.kl>=p.k/2) n.push(`${p.kl} of ${p.k} strikeouts looking.`);
+    if (p.wp) n.push(`${p.wp} wild pitch${p.wp>1?'es':''}.`);
+    return n.join(' ');
+  }
+  function gamePlan(M){
+    const SW=c=>c==='S'||c==='F'||c==='X';
+    const P={plat:[],mound:[],bases:[],hold:[],field:[]};
+    const pas=M.pas; const fp=pas.filter(p=>p.seq.length), fps=fp.filter(p=>SW(p.seq[0])).length;
+    const ps=[]; pas.forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{ps.push({b,s,c,k});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+    const ahead=ps.filter(x=>x.s===0&&x.b>=2), aheadSw=ahead.filter(x=>SW(x.c)).length;
+    const ks=pas.filter(p=>/^(K|ꓘ)/.test(p.res)), kl=pas.filter(p=>/^ꓘ/.test(p.res));
+    const xbh=pas.filter(p=>/^(2B|3B|HR)/.test(p.res));
+    // mound
+    if (fp.length){ const r=fps/fp.length; P.mound.push(r<0.4?`<b>Throw strike one.</b> ${M.opp} swung at ${fps} of ${fp.length} first pitches (${pct(fps,fp.length)}%).`:`<b>Start them off the plate.</b> ${M.opp} swung at ${fps} of ${fp.length} first pitches (${pct(fps,fp.length)}%).`); }
+    if (ahead.length>=3 && aheadSw===0) P.mound.push(`<b>Throw strikes when behind.</b> They never swung at 2-0 or 3-0 (${ahead.length} pitches).`);
+    if (ks.length>=2 && kl.length/ks.length>=0.5) P.mound.push(`<b>Finish on the corners.</b> ${kl.length} of ${ks.length} strikeouts were looking (ꓘ).`);
+    if (pas.length>=10 && ks.length/pas.length<0.15) P.mound.push(`<b>Expect contact.</b> They struck out in ${ks.length} of ${pas.length} plate appearances.`);
+    const xb=[...new Set(xbh.map(p=>p.h))]; if (xb.length) P.mound.push(`<b>Be careful with ${xb.length>1?xb.slice(0,-1).join(', ')+' and '+xb[xb.length-1]:xb[0]}.</b> ${xb.length>1?'They have':'He has'} the extra-base hits.`);
+    // field
+    const bip=M.bip; if (bip.length>=4){ const L=bip.filter(b=>b.a<35).length, R=bip.filter(b=>b.a>55).length;
+      if (L/bip.length>=0.45) P.field.push(`<b>Shade the left side.</b> ${L} of ${bip.length} balls in play went to third, short or left.`);
+      else if (R/bip.length>=0.45) P.field.push(`<b>Shade the right side.</b> ${R} of ${bip.length} balls in play went to first, second or right.`);
+      const g5=bip.filter(b=>/^5-/.test(b.res)||/^FC 5/.test(b.res)).length; if(g5>=3) P.field.push(`<b>Third baseman, expect action.</b> ${g5} outs were ground balls to third.`);
+    }
+    const bunters=Object.values(M.hitters).filter(h=>h.bunts).map(h=>first(h.name)); if (bunters.length) P.field.push(`<b>Corners in when ${bunters.join(' or ')} squares.</b>`);
+    Object.values(M.hitters).filter(h=>h.bip>=3 && (h.left/h.bip>=0.75||h.right/h.bip>=0.75)).forEach(h=>{const L=h.left>h.right; P.field.push(`<b>Shade ${h.name} to the ${L?'left':'right'} side.</b> ${L?h.left:h.right} of ${h.bip} balls in play went there.`);});
+    // hold
+    const st=M.steals; if (st.length){ const z=st.filter(s=>s.cnt==='0-0').length; const runners=Object.values(M.runners).filter(r=>r.att).sort((a,b)=>b.att-a.att);
+      P.hold.push(`<b>${z>st.length/2?'Throw over or pitch out on 0-0':'Hold runners'}</b> with ${runners.slice(0,4).map(r=>first(r.n)).join(', ')} on. ${z} of ${st.length} steal attempts came on the first pitch.`);
+      const sb=st.filter(s=>s.res==='SB').length; P.hold.push(`<b>They are ${sb} for ${st.length} stealing.</b> Catcher, be ready early in the count.`);
+      const non=Object.values(M.runners).filter(r=>!r.att && r.onb>=3); if(non.length){ const nm=non.map(r=>r.n); const list=nm.length>1?nm.slice(0,-1).join(', ')+' or '+nm[nm.length-1]:nm[0]; P.hold.push(`<b>Don’t worry about ${list} at first.</b> ${non.length>1?'None of them has':'He hasn’t'} tried to steal in ${non.reduce((a,r)=>a+r.onb,0)} combined times on base.`);}
+    } else P.hold.push('<b>No steal attempts recorded.</b> Keep normal holds.');
+    // plate / bases vs their pitchers + defense
+    const pit=M.pitchers; const bf=pit.reduce((a,p)=>a+p.bf,0), free=pit.reduce((a,p)=>a+p.bb+p.hbp,0), outs=pit.reduce((a,p)=>a+p.outs,0);
+    if (bf){ if (free/bf>=0.2) P.plat.push(`<b>Take until they throw a strike.</b> Their pitchers walked or hit ${free} of ${bf} batters in ${Math.floor(outs/3)}${outs%3?(outs%3===1?'⅓':'⅔'):''} innings.`);
+      const fs=pit.reduce((a,p)=>a+p.firstStrikes,0); if (fs/bf>=0.6) P.plat.push(`<b>Be ready to swing early.</b> They threw a first-pitch strike to ${fs} of ${bf} batters.`);
+      const best=pit.filter(p=>p.bf>=6).sort((a,b)=>(a.bb+a.hbp+a.h)/a.bf-(b.bb+b.hbp+b.h)/b.bf)[0]; if(best) P.plat.push(`<b>Toughest arm: ${best.n}.</b> ${best.h} hit${best.h===1?'':'s'} and ${best.bb+best.hbp} free bases in ${best.bf} batters.`);
+    }
+    const D=M.defense, att=D.sbAgainst+D.csAgainst;
+    if (att) P.bases.push(`<b>${D.csAgainst? 'Pick your spots' : 'Run freely'}.</b> Opponents are ${D.sbAgainst} for ${att} stealing${D.catcher?` against catcher ${D.catcher}`:''}.`);
+    if (D.wp+D.pb>=2) P.bases.push(`<b>Look for balls in the dirt.</b> ${D.wp} wild pitch${D.wp===1?'':'es'} and ${D.pb} passed ball${D.pb===1?'':'s'}.`);
+    if (D.errors) P.bases.push(`<b>Make them field it.</b> ${D.errors} error${D.errors>1?'s':''}: ${D.oppErrors.map(e=>'E'+e.pos+' '+first(e.who)).join(', ')}.`);
+    Object.keys(P).forEach(k=>{ if(!P[k].length) P[k].push('Not enough data yet. Add another game.'); });
+    return P;
+  }
+
+  return {parseGame, build, ord};
+})();
+if (typeof module!=='undefined') module.exports=ENGINE;
+
+</script>
+<script>
+const SAMPLE = {id:'sample-moore', opp:'Moore JV Red Lions', sample:true, games:[{label:'G1', text:"Top 5th - Deer Creek JV2 Antlers\nCarson Hugo at bat\nBottom 4th - Moore JV Red Lions\nFielder's Choice\n3 Outs\nStrike 1 looking, Ball 1, In play.\nGreyson Weiher grounds into fielder's choice to third baseman Bentley Debolt, Tatum Morrow did not score, Nolan Biswell out advancing to 3rd, Jaxon McHenry advances to 2nd.\nWalk\nDRCR 9 - MRJV 7\nCash Bobo in for pitcher Aiden Beloncik, Courtesy runner Tatum Morrow in for Hayden Hulsey, Courtesy runner Nolan Biswell in for Noah Wiggins, Ball 1, Ethan Hearne scores on passed ball, Tatum Morrow advances to 3rd on the same pitch, Nolan Biswell advances to 2nd on the same pitch, Ball 2, Ball 3, Strike 1 looking, Strike 2 swinging, Ball 4.\nJaxon McHenry walks, Aiden Beloncik pitching, Tatum Morrow remains at 3rd, Nolan Biswell remains at 2nd.\nWalk\nStrike 1 looking, Hayden Hulsey steals 2nd, Ball 1, Ball 2, Ball 3, Ball 4.\nNoah Wiggins walks, Cash Bobo pitching, Ethan Hearne remains at 3rd, Hayden Hulsey remains at 2nd.\nWalk\nBall 1, Ball 2, Strike 1 looking, Foul, Ball 3, Foul, Ball 4.\nHayden Hulsey walks, Cash Bobo pitching, Ethan Hearne remains at 3rd.\nGround Out\nDRCR 9 - MRJV 6 | 2 Outs\nStrike 1 swinging, Ball 1, Ball 2, Foul, In play.\nHayden Webster grounds out, third baseman Bentley Debolt to first baseman Wyatt Digby, JJ Parker scores, Ethan Hearne advances to 3rd.\nDouble\nStrike 1 looking, JJ Parker steals 2nd, Foul, In play.\nEthan Hearne doubles on a fly ball to right fielder Case Despain, JJ Parker held up at 3rd.\nError\nIn play.\nJJ Parker bunts and reaches on an error.\nGround Out\n1 Out\nBall 1, Strike 1 looking, Strike 2 looking, In play.\nPeyton Moreno grounds out, third baseman Bentley Debolt to first baseman Wyatt Digby.\nTop 4th - Deer Creek JV2 Antlers\nStrikeout\n3 Outs\nStrike 1 swinging, Foul, Ball 1, Strike 3 looking.\nCase Despain strikes out looking, Ethan Hearne pitching.\nStrikeout\n2 Outs\nStrike 1 looking, Ball 1, Strike 2 looking, Foul, Ball 2, Strike 3 looking.\nBentley Debolt strikes out looking, Ethan Hearne pitching, Wyatt Digby remains at 1st.\nPop Out\n1 Out\nStrike 1 looking, Ball 1, Pickoff attempt at 1st, Ball 2, Ball 3, Strike 2 swinging, In play.\nSawyer Bugg pops out to second baseman Easton McMurtrey, Wyatt Digby remains at 1st.\nSingle\nDRCR 9 - MRJV 5\nCourtesy runner Ryder Rosholt in for Tatum Tennell, Ball 1, Hank Linsenmeyer steals 3rd, Ryder Rosholt steals 2nd, Strike 1 swinging, Strike 2 swinging, Ball 2, Hank Linsenmeyer scores on passed ball, Ryder Rosholt advances to 3rd on the same pitch, Foul, Foul, In play.\nWyatt Digby singles on a ground ball to left fielder JJ Parker, Ryder Rosholt scores.\nWalk\nBall 1, Hank Linsenmeyer advances to 2nd on passed ball, Ball 2, Ball 3, Strike 1 looking, Ball 4.\nTatum Tennell walks, Ethan Hearne pitching, Hank Linsenmeyer remains at 2nd.\nWalk\nBall 1, Strike 1 looking, Ball 2, Ball 3, Ball 4.\nHank Linsenmeyer walks, Ethan Hearne pitching.\nBottom 3rd - Moore JV Red Lions\nStrikeout\n3 Outs\nStrike 1 looking, Ball 1, Strike 2 swinging, Foul, Ball 2, Strike 3 swinging.\nElijah Rivera strikes out swinging, Cash Bobo pitching.\nSingle\nDRCR 7 - MRJV 5 | 2 Outs\nIn play.\nGreyson Weiher singles on a line drive, left fielder Carson Hugo to third baseman Bentley Debolt to second baseman Sawyer Bugg, Jaxon McHenry scores, Greyson Weiher out advancing to 2nd.\nDouble\nStrike 1 looking, Strike 2 swinging, Ball 1, Ball 2, In play.\nJaxon McHenry doubles on a fly ball to center fielder Graham Blair.\nLine Out\n1 Out\nZane Korenak in for pitcher Cash Bobo, Ball 1, Ball 2, Ball 3, Strike 1 looking, In play.\nNoah Wiggins lines out to first baseman Wyatt Digby.\nTop 3rd - Deer Creek JV2 Antlers\nPop Out\n3 Outs\nStrike 1 swinging, Ball 1, Strike 2 swinging, In play.\nGraham Blair pops out to shortstop Jaxon McHenry.\nGround Out\n2 Outs\nFoul, In play.\nDylan Heppler grounds out, shortstop Jaxon McHenry to first baseman Noah Wiggins, Case Despain advances to 3rd.\nSacrifice Bunt\nDRCR 7 - MRJV 4 | 1 Out\nBentley Debolt advances to 3rd on passed ball, In play.\nCarson Hugo sacrifices to pitcher Ethan Hearne, Carson Hugo out advancing to 1st, Bentley Debolt scores, Case Despain advances to 2nd.\nWalk\nBall 1, Pickoff attempt at 1st, Pickoff attempt at 1st, Ball 2, Strike 1 swinging, Pickoff attempt at 1st, Ball 3, Bentley Debolt steals 2nd, Ball 4.\nCase Despain walks, Jaxon McHenry pitching, Bentley Debolt remains at 2nd.\nSingle\nBall 1, Ball 2, Strike 1 looking, In play.\nBentley Debolt singles on a line drive to right fielder Elijah Rivera.\nBottom 2nd - Moore JV Red Lions\nStrikeout\n3 Outs\nStrike 1 looking, Hayden Webster steals 2nd, Strike 2 looking, Foul, Ball 1, Strike 3 swinging.\nHayden Hulsey strikes out swinging, Zane Korenak pitching.\nSingle\nDRCR 6 - MRJV 4\nStrike 1 swinging, Ball 1, Ball 2, Peyton Moreno scores on wild pitch, JJ Parker advances to 3rd on the same pitch, In play.\nHayden Webster singles on a hard ground ball to center fielder Graham Blair, JJ Parker scores.\nGround Out\nDRCR 6 - MRJV 2 | 2 Outs\nBall 1, Strike 1 looking, Strike 2 swinging, Ball 2, Ball 3, In play.\nEthan Hearne grounds out, shortstop Dylan Heppler to first baseman Wyatt Digby, Elijah Rivera scores, Peyton Moreno advances to 3rd, JJ Parker advances to 2nd.\nSingle\nIn play.\nJJ Parker singles on a bunt to pitcher Zane Korenak, Elijah Rivera advances to 3rd, Peyton Moreno advances to 2nd.\nSingle\nPickoff attempt at 1st, Ball 1, In play.\nPeyton Moreno singles on a fly ball to left fielder Carson Hugo, Elijah Rivera advances to 2nd.\nSingle\nFoul, Ball 1, In play.\nElijah Rivera singles on a ground ball to shortstop Dylan Heppler.\nGround Out\n1 Out\nBall 1, In play.\nGreyson Weiher grounds out, third baseman Bentley Debolt to first baseman Wyatt Digby.\nTop 2nd - Deer Creek JV2 Antlers\nStrikeout\nDRCR 6 - MRJV 1 | 3 Outs\nPickoff attempt at 1st, Strike 1 looking, Pickoff attempt at 1st, Ball 1, Ball 2, Hank Linsenmeyer scores on wild pitch, Wyatt Digby advances to 2nd on the same pitch, Ball 3, Strike 2 looking, Strike 3 looking.\nSawyer Bugg strikes out looking, Jaxon McHenry pitching.\nSingle\nStrike 1 swinging, In play.\nWyatt Digby singles on a line drive to left fielder JJ Parker, Hank Linsenmeyer advances to 3rd.\nGround Out\nDRCR 5 - MRJV 1 | 2 Outs\nIn play.\nTatum Tennell grounds out, second baseman Hayden Webster to first baseman Noah Wiggins, Graham Blair scores, Hank Linsenmeyer advances to 2nd.\nSingle\nDRCR 4 - MRJV 1\nFoul, Pickoff attempt at 1st, Ball 1, Graham Blair steals 2nd, Foul, In play.\nHank Linsenmeyer singles on a ground ball to shortstop Preston Clements, Dylan Heppler scores, Graham Blair advances to 3rd.\nSingle\nDRCR 3 - MRJV 1\nIn play.\nGraham Blair singles on a hard ground ball to right fielder Elijah Rivera, Carson Hugo scores, Dylan Heppler advances to 3rd, Case Despain scores.\nWalk\nDRCR 1 - MRJV 1\nBall 1, Ball 2, Ball 3, Ball 4.\nDylan Heppler walks, Jaxon McHenry pitching, Bentley Debolt scores, Case Despain advances to 3rd, Carson Hugo advances to 2nd.\nHit By Pitch\nBall 1.\nCarson Hugo is hit by pitch, Jaxon McHenry pitching, Bentley Debolt advances to 3rd, Case Despain advances to 2nd.\nHit By Pitch\nPickoff attempt at 1st, Ball 1, Bentley Debolt steals 2nd, Ball 2, Ball 3.\nCase Despain is hit by pitch, Jaxon McHenry pitching, Bentley Debolt remains at 2nd.\nWalk\nBall 1, Ball 2, Ball 3, Strike 1 looking, Strike 2 looking, Ball 4.\nBentley Debolt walks, Jaxon McHenry pitching.\nGround Out\n1 Out\nBall 1, In play.\nSawyer Bugg grounds out, second baseman Hayden Webster to first baseman Noah Wiggins.\nBottom 1st - Moore JV Red Lions\nGround Out\n3 Outs\nStrike 1 swinging, Ball 1, Ball 2, In play.\nJaxon McHenry grounds out, second baseman Sawyer Bugg to first baseman Wyatt Digby.\nTriple\nDRCR 0 - MRJV 1 | 2 Outs\nStrike 1 looking, Hayden Webster scores on error by catcher Tatum Tennell, Hayden Hulsey advances to 2nd on the same error, Ball 1, Ball 2, Strike 2 looking, Hayden Hulsey caught stealing 3rd, catcher Tatum Tennell to third baseman Bentley Debolt, In play.\nNoah Wiggins triples on a line drive to right fielder Case Despain.\nWalk\nStrike 1 looking, Hayden Webster steals 2nd, Ball 1, Ball 2, Strike 2 swinging, Ball 3, Hayden Webster steals 3rd, Ball 4.\nHayden Hulsey walks, Zane Korenak pitching, Hayden Webster remains at 3rd.\nSingle\nBall 1, Foul, Foul, In play.\nHayden Webster singles on a ground ball to shortstop Dylan Heppler.\nGround Out\n1 Out\nStrike 1 looking, In play.\nEthan Hearne grounds out, second baseman Sawyer Bugg to first baseman Wyatt Digby.\nTop 1st - Deer Creek JV2 Antlers\nGround Out\n3 Outs\nCourtesy runner Ryder Rosholt in for Tatum Tennell, Ball 1, Ball 2, Pickoff attempt at 1st, In play.\nWyatt Digby grounds out, second baseman Hayden Webster to first baseman Noah Wiggins.\nSingle\nStrike 1 looking, In play.\nTatum Tennell singles on a ground ball to center fielder Ethan Hearne.\nStrikeout\n2 Outs\nStrike 1 looking, Foul, Graham Blair picked off at 1st, pitcher Jaxon McHenry to first baseman Noah Wiggins, Strike 3 swinging.\nHank Linsenmeyer strikes out swinging, Jaxon McHenry pitching.\nSingle\nBall 1, Ball 2, Ball 3, Strike 1 looking, In play.\nGraham Blair singles on a line drive to ce\n"},{label:'G2', text:"Top 1st - Moore JV Red Lions\nPop Out\n1 Out\nFoul, Ball 1, In play.\nJaxon McHenry pops out to pitcher Zane Korenak.\nSingle\nStrike 1 looking, In play.\nEthan Hearne singles on a line drive to right fielder Cayden Jeffries.\nFielder's Choice\n2 Outs\nBall 1, Ball 2, Ball 3, Strike 1 looking, In play.\nNoah Wiggins grounds into fielder's choice, second baseman Sawyer Bugg to shortstop Dylan Heppler, Ethan Hearne out advancing to 2nd, Noah Wiggins advances to 2nd on error by shortstop Dylan Heppler.\nGround Out\n3 Outs\nIn play.\nHayden Hulsey grounds out, third baseman Chris Markowitz to first baseman Aiden Sylvester.\nBottom 1st - Deer Creek JV2 Antlers\nSingle\nIn play.\nGraham Blair singles on a pop fly to first baseman Noah Wiggins.\nWalk\nStrike 1 swinging, Pickoff attempt at 1st, Ball 1, Graham Blair steals 2nd, Ball 2, Ball 3, Graham Blair advances to 3rd on wild pitch, Ball 4.\nCarson Hugo walks, Damien Gutierrez pitching, Graham Blair remains at 3rd.\nSingle\nMRJV 0 - DRCR 1 | 1 Out\nBall 1, Ball 2, Carson Hugo advances to 2nd on defensive indifference, Foul, In play.\nHank Linsenmeyer singles on a fly ball, center fielder Ethan Hearne to shortstop Jaxon McHenry, Hank Linsenmeyer out advancing to 2nd, Graham Blair scores, Carson Hugo advances to 3rd.\nSacrifice Fly\nMRJV 0 - DRCR 2 | 2 Outs\nBall 1, Ball 2, In play.\nTatum Tennell out on sacrifice fly to center fielder Ethan Hearne, Carson Hugo scores.\nDouble\nBall 1, Ball 2, In play.\nAiden Sylvester doubles on a fly ball to left fielder JJ Parker.\nSingle\nStrike 1 swinging, In play.\nDylan Heppler singles on a pop fly to second baseman Greyson Weiher, Aiden Sylvester advances to 3rd.\nSingle\nMRJV 0 - DRCR 3\nPickoff attempt at 1st, Ball 1, In play.\nChris Markowitz singles on a line drive to right fielder Elijah Rivera, Dylan Heppler advances to 3rd, Chris Markowitz advances to 2nd on the throw, Aiden Sylvester scores.\nLine Out\n3 Outs\nStrike 1 looking, Ball 1, Foul, In play.\nSawyer Bugg lines out to shortstop Jaxon McHenry.\nTop 2nd - Moore JV Red Lions\nGround Out\n1 Out\nIn play.\nGreyson Weiher grounds out, third baseman Chris Markowitz to first baseman Aiden Sylvester.\nHit By Pitch\nBall 1.\nElijah Rivera is hit by pitch, Zane Korenak pitching.\nStrikeout\n2 Outs\nStrike 1 swinging, Pickoff attempt at 1st, Ball 1, Ball 2, Foul, Pickoff attempt at 1st, Ball 3, Foul, Strike 3 looking.\nTrey Menser strikes out looking, Zane Korenak pitching, Elijah Rivera remains at 1st.\nGround Out\n3 Outs\nElijah Rivera steals 2nd, Ball 1, Foul, Strike 2 swinging, Ball 2, Foul, Ball 3, In play.\nPeyton Moreno grounds out, shortstop Dylan Heppler to first baseman Aiden Sylvester.\nBottom 2nd - Deer Creek JV2 Antlers\nDropped 3rd Strike\n1 Out\nStrike 1 swinging, Strike 2 looking, Strike 3 swinging.\nCayden Jeffries out at first on dropped 3rd strike.\nWalk\nBall 1, Ball 2, Ball 3, Ball 4.\nGraham Blair walks, Damien Gutierrez pitching.\nStrikeout\n2 Outs\nBall 1, Graham Blair steals 2nd, Strike 1 swinging, Strike 2 swinging, Ball 2, Strike 3 swinging.\nCarson Hugo strikes out swinging, Damien Gutierrez pitching, Graham Blair remains at 2nd.\nLine Out\n3 Outs\nIn play.\nHank Linsenmeyer lines out to left fielder JJ Parker.\nTop 3rd - Moore JV Red Lions\nStrikeout\n1 Out\nBall 1, Foul, Ball 2, Ball 3, Foul, Foul, Foul, Strike 3 looking.\nJJ Parker strikes out looking, Zane Korenak pitching.\nError\nBall 1, In play.\nJaxon McHenry hits a ground ball and reaches on an error by shortstop Dylan Heppler.\nFielder's Choice\n2 Outs\nStrike 1 swinging, In play.\nEthan Hearne grounds into fielder's choice, second baseman Sawyer Bugg to shortstop Dylan Heppler, Jaxon McHenry out advancing to 2nd.\nWalk\nFoul, Ball 1, Ball 2, Ball 3, Strike 2 swinging, Foul, Ball 4.\nNoah Wiggins walks, Zane Korenak pitching, Ethan Hearne advances to 2nd.\nGround Out\n3 Outs\nFoul, In play.\nHayden Hulsey grounds out, shortstop Dylan Heppler to first baseman Aiden Sylvester.\nBottom 3rd - Deer Creek JV2 Antlers\nLine Out\n1 Out\nDamien Gutierrez in for pitcher Hayden Webster, Foul, In play.\nTatum Tennell lines out to right fielder Elijah Rivera.\nWalk\nBall 1, Ball 2, Strike 1 looking, Foul, Ball 3, Ball 4.\nAiden Sylvester walks, Hayden Webster pitching.\nPop Out\n2 Outs\nStrike 1 swinging, Foul, Ball 1, Ball 2, Ball 3, In play.\nDylan Heppler pops out to first baseman Noah Wiggins, Aiden Sylvester remains at 1st.\nFly Out\n3 Outs\nBall 1, Strike 1 looking, Ball 2, Pickoff attempt at 1st, In play.\nChris Markowitz flies out to left fielder JJ Parker.\nTop 4th - Moore JV Red Lions\nWalk\nZane Korenak in for pitcher Hudson Jilek, Ball 1, Ball 2, Strike 1 looking, Strike 2 looking, Ball 3, Foul, Ball 4.\nGreyson Weiher walks, Hudson Jilek pitching.\nStrikeout\n1 Out\nStrike 1 swinging, Strike 2 swinging, Strike 3 looking.\nElijah Rivera strikes out looking, Hudson Jilek pitching, Greyson Weiher remains at 1st.\nGround Out\n2 Outs\nLineup changed: Nolan Biswell in for batter Trey Menser, Ball 1, Foul, Ball 2, Greyson Weiher advances to 2nd on wild pitch, Strike 2 swinging, In play.\nNolan Biswell grounds out, pitcher Hudson Jilek to first baseman Aiden Sylvester, Greyson Weiher advances to 3rd.\nSingle\nMRJV 1 - DRCR 3\nStrike 1 looking, Strike 2 swinging, Ball 1, Ball 2, In play.\nPeyton Moreno singles on a ground ball to center fielder Carson Hugo, Greyson Weiher scores.\nLine Out\n3 Outs\nStrike 1 looking, In play.\nJJ Parker lines out to first baseman Aiden Sylvester.\nBottom 4th - Deer Creek JV2 Antlers\nError\nBall 1, Ball 2, Strike 1 swinging, Foul, Ball 3, In play.\nSawyer Bugg hits a pop fly and reaches on an error by shortstop Jaxon McHenry.\nWalk\nPickoff attempt at 1st, Ball 1, Ball 2, Strike 1 swinging, Ball 3, Ball 4.\nCayden Jeffries walks, Hayden Webster pitching, Sawyer Bugg advances to 2nd.\nHit By Pitch\nFoul, Ball 1, Ball 2.\nGraham Blair is hit by pitch, Hayden Webster pitching, Sawyer Bugg advances to 3rd, Cayden Jeffries advances to 2nd.\nDouble\nMRJV 1 - DRCR 6\nStrike 1 swinging, Ball 1, Foul, Ball 2, Ball 3, In play.\nCarson Hugo doubles on a fly ball to left fielder JJ Parker, Graham Blair scores, Sawyer Bugg scores, Cayden Jeffries scores.\nHit By Pitch\nStrike 1 looking, Ball 1.\nHank Linsenmeyer is hit by pitch, Hayden Webster pitching, Carson Hugo remains at 2nd.\nSingle\nMRJV 1 - DRCR 7\nLineup changed: Hayden Webster in at pitcher, Strike 1 looking, Strike 2 swinging, In play.\nTatum Tennell singles on a line drive to center fielder Ethan Hearne, Carson Hugo scores, Hank Linsenmeyer advances to 2nd.\nSingle\nIn play.\nAiden Sylvester singles on a line drive to left fielder JJ Parker, Hank Linsenmeyer advances to 3rd, Tatum Tennell advances to 2nd.\nFielder's Choice\n1 Out\nBall 1, Strike 1 looking, In play.\nDylan Heppler grounds into fielder's choice, third baseman Greyson Weiher to catcher Hayden Hulsey, Hank Linsenmeyer out advancing to home, Tatum Tennell advances to 3rd, Aiden Sylvester advances to 2nd.\nWalk\nMRJV 1 - DRCR 8\nBall 1, Tatum Tennell scores on wild pitch, Aiden Sylvester advances to 3rd on the same pitch, Dylan Heppler advances to 2nd on the same pitch, Ball 2, Ball 3, Ball 4.\nChris Markowitz walks, Peyton Moreno pitching, Aiden Sylvester remains at 3rd, Dylan Heppler remains at 2nd.\nWalk\nMRJV 1 - DRCR 9\nBall 1, Ball 2, Foul, Ball 3, Ball 4.\nSawyer Bugg walks, Peyton Moreno pitching, Aiden Sylvester scores, Dylan Heppler advances to 3rd, Chris Markowitz advances to 2nd.\nDouble\nMRJV 1 - DRCR 11\nIn play.\nCayden Jeffries doubles on a line drive to left fielder JJ Parker, Dylan Heppler scores, Chris Markowitz scores, Sawyer Bugg advances to 3rd.\nGraham Blair at bat\n"}]};
+const STORE='dugoutscout.reports.v1', ACTIVE='dugoutscout.active.v1';
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+const $=s=>document.querySelector(s), app=$('#app'), head=$('#head'), tip=$('#tip');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SW=c=>c==='S'||c==='F'||c==='X';
+let reports = store.get(STORE,[]);
+let state = {game:'all', hitter:'all', runner:'all'};
+let draft = {games:[{label:'G1',text:''}], opp:null};
+let model=null, modelId=null;
+
+function allReports(){ return [SAMPLE].concat(reports); }
+function activeReport(){ const id=store.get(ACTIVE,SAMPLE.id); return allReports().find(r=>r.id===id)||SAMPLE; }
+function setActive(id){ store.set(ACTIVE,id); model=null; state={game:'all',hitter:'all',runner:'all'}; }
+function getModel(){
+  const r=activeReport();
+  if (!model || modelId!==r.id+'|'+r.games.length){
+    const parsed=r.games.map((g,i)=>ENGINE.parseGame(g.text, g.label||('G'+(i+1)))).filter(p=>p.ok);
+    model=ENGINE.build(parsed, r.opp); modelId=r.id+'|'+r.games.length;
+  }
+  return model;
+}
+const gOk=g=>state.game==='all'||state.game===g;
+
+/* ---------- field ---------- */
+const HX=300,HY=470,R=410;
+const pt=(a,d)=>{const t=(135-a)*Math.PI/180;return [HX+R*d*Math.cos(t),HY-R*d*Math.sin(t)];};
+const BASE={0:pt(0,0),1:pt(90,.3),2:pt(45,.4243),3:pt(0,.3),4:pt(0,0)};
+function fieldSVG(inner,label,vb){
+  const [lx,ly]=pt(0,1),[rx,ry]=pt(90,1),[ilx,ily]=pt(0,.55),[irx,iry]=pt(90,.55),[mx,my]=pt(45,.21);
+  const stripes=[.2,.4,.6,.8].map(d=>{const [a,b]=pt(0,d+.1),[c,e]=pt(90,d+.1),[f,g]=pt(0,d),[h,j]=pt(90,d);return `<path d="M${f},${g} A${R*d},${R*d} 0 0 1 ${h},${j} L${c},${e} A${R*(d+.1)},${R*(d+.1)} 0 0 0 ${a},${b} Z" fill="var(--grass2)"/>`}).join('');
+  const bases=[1,2,3].map(b=>{const [x,y]=BASE[b];return `<rect x="${x-7}" y="${y-7}" width="14" height="14" fill="var(--chalk)" transform="rotate(45 ${x} ${y})"/>`}).join('');
+  return `<svg class="field" viewBox="${vb||'0 0 600 500'}" role="img" aria-label="${esc(label)}">
+  <path d="M${HX},${HY} L${lx},${ly} A${R},${R} 0 0 1 ${rx},${ry} Z" fill="var(--grass)"/>${stripes}
+  <path d="M${HX},${HY} L${ilx},${ily} A${R*.55},${R*.55} 0 0 1 ${irx},${iry} Z" fill="var(--dirt)"/><circle cx="${HX}" cy="${HY-6}" r="22" fill="var(--dirt)"/>
+  <path d="M${BASE[0][0]},${BASE[0][1]-30} L${BASE[1][0]-28},${BASE[1][1]} L${BASE[2][0]},${BASE[2][1]+30} L${BASE[3][0]+28},${BASE[3][1]} Z" fill="var(--grass)"/>
+  <circle cx="${mx}" cy="${my}" r="15" fill="var(--dirt)"/>
+  <path d="M${HX},${HY} L${lx},${ly} M${HX},${HY} L${rx},${ry}" stroke="var(--chalk)" stroke-width="2"/>
+  <path d="M${HX},${HY} L${BASE[1][0]},${BASE[1][1]} L${BASE[2][0]},${BASE[2][1]} L${BASE[3][0]},${BASE[3][1]} Z" fill="none" stroke="var(--chalk)" stroke-width="1.5" opacity=".7"/>
+  ${bases}<path d="M${HX-7},${HY-4} h14 v6 l-7,6 l-7,-6 Z" fill="var(--chalk)"/>${inner}</svg>`;
+}
+function sprayField(list){
+  const seen=[];
+  const dots=list.map(b=>{
+    const k=seen.filter(q=>Math.abs(q.a-b.a)<4&&Math.abs(q.d-b.d)<.06).length; seen.push(b);
+    let [x,y]=pt(b.a,b.d); if(k){x+=[0,15,-15][k%3];y-=Math.floor(k/3)*15;}
+    const fill=b.on?'var(--hit)':'#ffffff', stroke=b.on?'#5c4600':'#1d3a26';
+    const tl={GB:'Ground ball',LD:'Line drive',FB:'Fly ball',PU:'Pop-up',BU:'Bunt'}[b.type]||'';
+    const sh=b.type==='LD'?`<path d="M${x},${y-8} L${x+8},${y+6} L${x-8},${y+6} Z"`:(b.type==='FB'||b.type==='PU')?`<rect x="${x-7}" y="${y-7}" width="14" height="14"`:b.type==='BU'?`<rect x="${x-6}" y="${y-6}" width="12" height="12" transform="rotate(45 ${x} ${y})"`:`<circle cx="${x}" cy="${y}" r="7"`;
+    return `${sh} fill="${fill}" fill-opacity="${b.on?1:.85}" stroke="${stroke}" stroke-width="1.5" tabindex="0" data-tip="<b>${esc(b.h)}</b><br>${esc(b.g)}, ${esc(b.inn)} inning: ${esc(b.res)}<br>${tl}"/>`;
+  }).join('');
+  return fieldSVG(dots,'Spray chart of balls in play');
+}
+const legend=()=>`<div class="legend"><span><i style="background:var(--hit)"></i>Reached base</span><span><i style="background:#fff;border:1px solid #1d3a26"></i>Out</span><span>● ground ball</span><span>▲ line drive</span><span>■ fly ball or pop-up</span><span>◆ bunt</span></div>`;
+
+function bindTips(root){
+  root.querySelectorAll('[data-tip]').forEach(el=>{
+    const show=e=>{tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';const r=el.getBoundingClientRect();const x=(e&&e.clientX)||r.left+r.width/2,y=(e&&e.clientY)||r.top;tip.style.left=Math.min(x+12,innerWidth-270)+'px';tip.style.top=(y+14)+'px';};
+    el.addEventListener('mousemove',show);el.addEventListener('focus',()=>show());
+    el.addEventListener('mouseleave',()=>tip.style.display='none');el.addEventListener('blur',()=>tip.style.display='none');
+  });
+}
+function gameSeg(M){
+  const opts=[['all','All games']].concat(M.games.map(g=>[g,g]));
+  return `<div class="seg" role="group" aria-label="Games">${opts.map(([v,t])=>`<button type="button" data-game="${esc(v)}" aria-pressed="${state.game===v}">${esc(t)}</button>`).join('')}</div>`;
+}
+function pick(key,list,allLabel,labelText){
+  return `<label>${labelText} <select data-pick="${key}"><option value="all">${allLabel}</option>${list.map(n=>`<option ${state[key]===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label>`;
+}
+const planBox=(t,who,items)=>`<section class="plan" aria-label="Game plan"><h2>${t}</h2>${who?`<p class="who">${who}</p>`:''}<ol>${items.map(i=>`<li>${i}</li>`).join('')}</ol></section>`;
+const pct=(a,n)=>n?Math.round(a/n*100):0;
+
+/* ---------- report views ---------- */
+function viewPlan(M){
+  const bip=M.bip.filter(b=>gOk(b.g)), pas=M.pas.filter(p=>gOk(p.g));
+  const fp=pas.filter(p=>p.seq.length), fps=fp.filter(p=>SW(p.seq[0])).length;
+  const D=M.defense, att=D.sbAgainst+D.csAgainst, free=M.pitchers.reduce((a,p)=>a+p.bb+p.hbp,0), bf=M.pitchers.reduce((a,p)=>a+p.bf,0);
+  return `<div class="layout"><section class="stage"><h2>Where ${esc(M.opp)} puts the ball</h2><p class="note">Every ball in play from ${M.games.length} game${M.games.length>1?'s':''}. Yellow reached base, white was an out. Use the tabs to dig into hitters, counts, running and pitching.</p><div class="filters">${gameSeg(M)}</div>${sprayField(bip)}${legend()}</section>
+  <div class="side">${planBox('At the plate','Facing their pitchers',M.plan.plat)}${planBox('On the mound','Pitching to their hitters',M.plan.mound)}</div></div>
+  <div class="layout"><div class="side">${planBox('On the bases','Running on their defense',M.plan.bases)}${planBox('Holding runners','',M.plan.hold)}</div><div class="side">${planBox('In the field','',M.plan.field)}
+  <section class="card"><h3>At a glance</h3><div class="stats"><div><b>${free} of ${bf}</b><span>batters walked or hit by their pitchers</span></div><div><b>${att?D.sbAgainst+' of '+att:'—'}</b><span>steals allowed</span></div><div><b>${fps} of ${fp.length}</b><span>first pitches their hitters swung at</span></div></div></section></div></div>`;
+}
+function viewSpray(M){
+  const names=Object.keys(M.hitters), h=state.hitter, H=M.hitters[h];
+  const list=M.bip.filter(b=>gOk(b.g)&&(h==='all'||b.h===h));
+  const L=list.filter(b=>b.a<35).length, Mi=list.filter(b=>b.a>=35&&b.a<=55).length, Rt=list.length-L-Mi, on=list.filter(b=>b.on).length;
+  const pas=M.pas.filter(p=>gOk(p.g)&&(h==='all'||p.h===h));
+  const plan=h==='all'?planBox('Defending '+esc(M.opp),'All hitters',M.plan.field):planBox('Defending '+esc(h),'',[`<b>Where to play him:</b> ${esc(H.shade)}`,`<b>His approach:</b> ${esc(H.read)}`]);
+  const rows=pas.map(p=>`<tr><td>${esc(p.h)}</td><td>${esc(p.g)}</td><td>${esc(p.inn)}</td><td><span class="tag ${/^(1B|2B|3B|HR|E|BB|IBB|HBP)/.test(p.res)?'on':''}">${esc(p.res)}</span></td><td>${[...p.seq].map(c=>`<span class="tag sm ${SW(c)?'on':''}">${c}</span>`).join(' ')}</td></tr>`).join('');
+  const lines=names.map(n=>{const x=M.hitters[n];return `<tr class="pick" data-hitter="${esc(n)}" tabindex="0"><td>${esc(n)}</td><td>${esc(x.line)}</td><td class="num">${x.pa.length}</td><td class="num">${pct(x.swings,x.pitches)}%</td><td class="num">${x.fps} of ${x.fp}</td><td>${esc(x.read)}</td></tr>`}).join('');
+  return `<div class="layout"><section class="stage"><h2>${h==='all'?esc(M.opp)+' spray chart':esc(h)}</h2><p class="note">${list.length} balls in play: ${L} left side, ${Mi} middle, ${Rt} right side. ${on} reached base. Hover or tap a dot for the play.</p>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${gameSeg(M)}</div>${sprayField(list)}${legend()}</section>
+  <div class="side">${plan}${h==='all'?'':`<section class="card"><h3>Line</h3><p style="margin:0;font:700 22px/1.2 'Barlow Condensed',sans-serif">${esc(H.line)}</p></section>`}</div></div>
+  ${h==='all'?`<section class="below"><h2>Hitters</h2><div class="tablewrap"><table><thead><tr><th>Hitter</th><th>Line</th><th class="num">PA</th><th class="num">Swing %</th><th class="num">1st-pitch swings</th><th>Read</th></tr></thead><tbody>${lines}</tbody></table></div><p class="note" style="margin:8px 0 0">Click a hitter to see his spray chart.</p></section>`:''}
+  <section class="below"><h2>Plate appearances</h2><p class="note">Pitches: B ball, C called strike, S swinging strike, F foul, X in play, H hit by pitch. Yellow letters are swings.</p><div class="tablewrap"><table><thead><tr><th>Hitter</th><th>Game</th><th>Inning</th><th>Result</th><th>Pitches</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No plate appearances for this filter.</td></tr>'}</tbody></table></div></section>`;
+}
+function viewCounts(M){
+  const names=Object.keys(M.hitters), h=state.hitter, P=[];
+  M.pas.filter(p=>gOk(p.g)&&(h==='all'||p.h===h)).forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{P.push({b,s,c,k,p});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+  const fp=P.filter(x=>x.k===0),fs=fp.filter(x=>SW(x.c)).length,two=P.filter(x=>x.s===2),ts=two.filter(x=>SW(x.c)).length,ah=P.filter(x=>x.s===0&&x.b>=2),as=ah.filter(x=>SW(x.c)).length;
+  let g='<div class="grid"><div></div>'+[0,1,2,3].map(b=>`<div class="h">${b} ball${b===1?'':'s'}</div>`).join('');
+  for(let s=0;s<3;s++){g+=`<div class="r">${s} strike${s===1?'':'s'}</div>`;for(let b=0;b<4;b++){const L=P.filter(x=>x.b===b&&x.s===s),w=L.filter(x=>SW(x.c)).length,r=L.length?w/L.length:0;
+    const tiles=h==='all'?'':`<div class="tiles">${L.map(x=>`<em class="${SW(x.c)?'sw':''}" title="${esc(x.p.g+' '+x.p.inn)}">${x.c}</em>`).join('')}</div>`;
+    g+=`<div class="cell" style="background:color-mix(in srgb, var(--hit) ${Math.round(r*85)}%, var(--panel))"><span>${b}-${s}</span><b>${L.length?pct(w,L.length)+'%':'—'}</b><small>${w} of ${L.length} swung</small>${tiles}</div>`;}}
+  g+='</div>';
+  const items=h==='all'?M.plan.mound:[`<b>First pitch:</b> swung at ${fs} of ${fp.length}. ${fp.length&&fs/fp.length<.4?'Throw a strike to start him.':'He’ll swing early; start him off the plate.'}`,`<b>Two strikes:</b> swung at ${ts} of ${two.length}.`,`<b>His approach:</b> ${esc(M.hitters[h].read)}`];
+  return `<div class="layout"><section class="stage"><h2>${h==='all'?'Swing rate by count':esc(h)+' by count'}</h2><p class="note">How often they swung in each count. Darker yellow means more swings.${h==='all'?' Pick a hitter to see every pitch he saw.':' Each tile is one pitch; yellow tiles are swings.'}</p>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${gameSeg(M)}</div>${g}</section>
+  <div class="side">${planBox('Pitching to '+esc(h==='all'?M.opp:h),'',items)}
+  <section class="card"><h3>Key counts</h3><div class="stats"><div><b>${pct(fs,fp.length)}%</b><span>swing on the first pitch (${fs} of ${fp.length})</span></div><div><b>${pct(ts,two.length)}%</b><span>swing with two strikes</span></div><div><b>${as} of ${ah.length}</b><span>swings at 2-0 and 3-0</span></div></div></section></div></div>`;
+}
+function viewRunning(M){
+  const r=state.runner, list=M.steals.filter(s=>gOk(s.g)&&(r==='all'||s.r===r));
+  const groups={}; list.forEach(s=>{(groups[s.from+'-'+s.to]=groups[s.from+'-'+s.to]||[]).push(s);});
+  const [mdx,mdy]=pt(45,.21);
+  const arrows=Object.values(groups).map(gr=>{
+    const [x1,y1]=BASE[gr[0].from],[x2,y2]=BASE[gr[0].to]; const cx=(x1+x2)/2,cy=(y1+y2)/2; let nx=cx-mdx,ny=cy-mdy; const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    const paths=gr.map((s,i)=>{const bend=14+i*7,qx=cx+nx*bend,qy=cy+ny*bend,col=s.res==='SB'?'var(--hit)':'var(--cs)';
+      return `<path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" marker-end="url(#ah-${s.res})" tabindex="0" data-tip="<b>${esc(s.r)}</b><br>${esc(s.g)} ${esc(s.inn)}: ${s.res==='SB'?'stole':'caught stealing'} ${['','','2nd','3rd','home'][s.to]}<br>Count ${s.cnt}, ran on: ${esc(s.pitch.toLowerCase())}<br>${s.outs} out, ${esc(s.bat)} batting"/>`;}).join('');
+    const zero=gr.filter(s=>s.cnt==='0-0').length, l1=`${gr.length} attempt${gr.length>1?'s':''} to ${['','','2nd','3rd','home'][gr[0].to]}`, l2=zero===gr.length?(gr.length>1?'all on 0-0':'on 0-0'):'counts '+gr.map(s=>s.cnt).join(', ');
+    const lx=cx+nx*(26+gr.length*6), ly=cy+ny*(26+gr.length*6);
+    return paths+`<text x="${lx}" y="${ly}" text-anchor="${nx>0?'start':'end'}" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="17" fill="var(--chalk)" stroke="var(--grass)" stroke-width="3" paint-order="stroke">${l1}<tspan x="${lx}" dy="17" font-weight="600" font-size="15">${esc(l2)}</tspan></text>`;
+  }).join('');
+  const defs=`<defs>${['SB','CS'].map(k=>`<marker id="ah-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--${k==='SB'?'hit':'cs'})"/></marker>`).join('')}</defs>`;
+  const sb=list.filter(s=>s.res==='SB').length, z=list.filter(s=>s.cnt==='0-0').length;
+  const R=Object.values(M.runners).sort((a,b)=>b.att-a.att||(b.onb||0)-(a.onb||0));
+  const rows=R.map(x=>`<tr class="pick" data-runner="${esc(x.n)}" tabindex="0"><td>${esc(x.n)}</td><td class="num">${x.onb==null?'—':x.onb}</td><td class="num">${x.att}</td><td class="num">${x.sb}</td><td class="num">${x.cs}</td><td class="num">${x.zero}</td><td>${esc(x.read)}</td></tr>`).join('');
+  const other=M.other.filter(o=>gOk(o.g)&&(r==='all'||o.r===r)).map(o=>`<li>${esc(o.g)} ${esc(o.inn)}, ${esc(o.r)}: ${esc(o.play)}</li>`).join('');
+  const plan=r==='all'?planBox('Holding their runners','',M.plan.hold):planBox('Holding '+esc(r),'',[`<b>Tendency:</b> ${esc((M.runners[r]||{read:'No attempts.'}).read)}`,list.length?`<b>When he runs:</b> ${list.map(s=>s.cnt).join(', ')}. Throw over before the first pitch.`:'<b>No steal attempts.</b> Focus on the hitter.']);
+  return `<div class="layout"><section class="stage"><h2>${r==='all'?'Steal attempts':esc(r)}</h2><p class="note">${list.length} attempt${list.length===1?'':'s'}: ${sb} stolen, ${list.length-sb} caught, ${z} on the first pitch (0-0). Yellow arrows are steals, red is caught stealing.</p>
+  <div class="filters">${pick('runner',R.map(x=>x.n),'All runners','Runner')}${gameSeg(M)}</div>${fieldSVG(defs+arrows,'Steal attempts drawn between bases','20 215 560 290')}</section>
+  <div class="side">${plan}${other?`<section class="card"><h3>Other running plays</h3><ul style="margin:0;padding-left:18px">${other}</ul></section>`:''}</div></div>
+  <section class="below"><h2>Runners</h2><div class="tablewrap"><table><thead><tr><th>Runner</th><th class="num">On base</th><th class="num">Attempts</th><th class="num">SB</th><th class="num">CS</th><th class="num">Ran on 0-0</th><th>Read</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No runners yet.</td></tr>'}</tbody></table></div><p class="note" style="margin:8px 0 0">Click a runner to show his attempts. Steals are logged on the pitch listed just before them in the play-by-play.</p></section>`;
+}
+function viewPitchers(M){
+  const list=M.pitchers.filter(p=>gOk(p.g)), D=M.defense, att=D.sbAgainst+D.csAgainst;
+  const bars=list.map(p=>{const v=(p.bb+p.hbp)/p.bf;return `<div><span>${esc(p.n)} <small style="color:var(--muted)">${esc(p.g)}</small></span><span class="track"><span class="fill ${v<.2?'ok':''}" style="width:${Math.min(100,Math.round(v/.6*100))}%"></span></span><b>${p.bb+p.hbp} of ${p.bf}</b></div>`}).join('');
+  const rows=list.map(p=>`<tr><td>${esc(p.g)}</td><td>${esc(p.n)}</td><td class="num">${p.ip}</td><td class="num">${p.bf}</td><td class="num">${p.pitches}</td><td class="num">${p.h}</td><td class="num">${p.r}</td><td class="num">${p.bb}</td><td class="num">${p.hbp}</td><td class="num">${p.k}</td><td class="num">${p.wp}</td><td>${esc(p.note)}</td></tr>`).join('');
+  return `<div class="layout"><section class="stage"><h2>Free bases by pitcher</h2><p class="note">Walks plus hit batters out of batters faced. Green is under one in five.</p><div class="filters">${gameSeg(M)}</div><div class="bars">${bars||'<p class="empty">No pitching data.</p>'}</div></section>
+  <div class="side">${planBox('Hitting against '+esc(M.opp),'',M.plan.plat)}${planBox('Running on their defense','',M.plan.bases)}
+  <section class="card"><h3>Their defense</h3><div class="stats"><div><b>${att?D.sbAgainst+' of '+att:'—'}</b><span>steals allowed${D.catcher?', catcher '+esc(D.catcher):''}</span></div><div><b>${D.wp+D.pb}</b><span>wild pitches and passed balls</span></div><div><b>${D.errors}</b><span>errors</span></div></div></section></div></div>
+  <section class="below"><h2>Pitching lines</h2><div class="tablewrap"><table><thead><tr><th>Game</th><th>Pitcher</th><th class="num">IP</th><th class="num">BF</th><th class="num">Pitches</th><th class="num">H</th><th class="num">R</th><th class="num">BB</th><th class="num">HBP</th><th class="num">K</th><th class="num">WP</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note" style="margin:8px 0 0">R counts every run that scored while he was pitching. K includes called third strikes (ꓘ).</p></section>`;
+}
+
+/* ---------- builder views ---------- */
+function teamsFromDraft(){
+  const res=draft.games.map((g,i)=>g.text.trim()?ENGINE.parseGame(g.text,g.label||('G'+(i+1))):null);
+  const teams={}; res.forEach(r=>{ if(r&&r.ok) r.teams.forEach(t=>teams[t]=(teams[t]||0)+1); });
+  return {res, teams:Object.keys(teams).sort((a,b)=>teams[b]-teams[a])};
+}
+function viewNew(){
+  const {res,teams}=teamsFromDraft();
+  if (draft.opp && teams.length && !teams.includes(draft.opp)) draft.opp=null;
+  const games=draft.games.map((g,i)=>{ const r=res[i];
+    const status=!g.text.trim()?'<span class="note">Paste a play-by-play.</span>':r.ok?`<span class="ok">Read ${r.halves.length} half-innings: ${r.teams.map(esc).join(' vs ')}</span>`:`<span class="err">${esc(r.error)}</span>`;
+    return `<section class="game"><header><label>Game name <input type="text" data-glabel="${i}" value="${esc(g.label)}" placeholder="G${i+1}"></label>${draft.games.length>1?`<button type="button" class="btn" data-gremove="${i}">Remove game</button>`:''}</header>
+    <textarea data-gtext="${i}" placeholder="Paste the whole play-by-play here, starting with a line like “Top 1st - Team Name”." aria-label="Play-by-play for game ${i+1}">${esc(g.text)}</textarea><p style="margin:6px 0 0">${status}</p></section>`;}).join('');
+  const choose=teams.length?`<div class="choice" role="radiogroup" aria-label="Team to scout">${teams.map(t=>`<label><input type="radio" name="opp" value="${esc(t)}" ${draft.opp===t?'checked':''}> ${esc(t)}</label>`).join('')}</div>`:'<p class="note">Teams appear here once a game is pasted.</p>';
+  return `<div class="steps">
+  <section class="card"><h2>1. Paste each game’s play-by-play</h2><p class="note">In GameChanger, open a completed game, go to Plays, select all of the play-by-play text and copy it. Paste one game per box. Newest-first or oldest-first both work.</p></section>
+  ${games}
+  <div><button type="button" class="btn" id="addgame">Add another game</button></div>
+  <section class="card"><h2>2. Pick the team you’re scouting</h2>${choose}</section>
+  <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn primary" id="build" ${draft.opp&&teams.includes(draft.opp)?'':'disabled'}>${draft.target?'Add game to report':'Build scouting report'}</button><a class="btn" href="#reports">Cancel</a></div></div>`;
+}
+function encodeShare(r){ return btoa(unescape(encodeURIComponent(JSON.stringify({opp:r.opp,games:r.games})))); }
+function decodeShare(s){ const o=JSON.parse(decodeURIComponent(escape(atob(s.trim())))); if(!o.opp||!Array.isArray(o.games)) throw new Error('bad'); return o; }
+function viewReports(){
+  const cur=activeReport().id;
+  const cards=allReports().map(r=>`<article class="report"><h3>${esc(r.opp)}</h3><span class="note">${r.games.length} game${r.games.length>1?'s':''}${r.sample?', sample report':''}${r.updated?', updated '+new Date(r.updated).toLocaleDateString():''}</span>
+    <div class="actions"><button type="button" class="btn primary" data-open="${esc(r.id)}">${r.id===cur?'Open (current)':'Open'}</button><button type="button" class="btn" data-addto="${esc(r.id)}">Add a game</button><button type="button" class="btn" data-share="${esc(r.id)}">Share</button>${r.sample?'':`<button type="button" class="btn" data-del="${esc(r.id)}">Delete</button>`}</div></article>`).join('');
+  return `<div class="layout" style="grid-template-columns:1fr"><section class="stage"><h2>Your scouting reports</h2><p class="note">Reports are saved in this browser. To give one to another coach, use Share and send them the code.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><a class="btn primary" href="#new">New scouting report</a></div><div class="reports">${cards}</div></section>
+  <section class="card" id="sharebox" hidden><h2>Share code</h2><p class="note">Copy this whole code and send it to another coach. They paste it below on their copy of the site.</p><textarea id="sharecode" readonly style="min-height:110px"></textarea></section>
+  <section class="card"><h2>Open a report another coach shared</h2><p class="note">Paste the share code you were sent.</p><textarea id="importcode" style="min-height:90px" aria-label="Share code"></textarea><p style="margin:8px 0 0"><button type="button" class="btn" id="import">Add report</button> <span id="importmsg"></span></p></section></div>`;
+}
+
+/* ---------- shell ---------- */
+const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,counts:viewCounts,running:viewRunning,pitchers:viewPitchers};
+function renderHead(v){
+  const r=activeReport(), inReport=!!REPORT_VIEWS[v];
+  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers']];
+  head.innerHTML=`<div class="topbar"><a class="brand" href="#reports">Dugout Scout</a><div class="toplinks"><a class="btn ghost" href="#reports">All reports</a><a class="btn ghost" href="#new">New report</a></div></div>
+  ${inReport?`<h1>${esc(r.opp)}</h1><p class="sub">Scouting from ${r.games.length} game${r.games.length>1?'s':''}: ${r.games.map(g=>esc(g.label)).join(', ')}${r.sample?'. Sample report.':''}</p>
+  <nav class="tabs" aria-label="Report sections">${tabs.map(([k,t])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${t}</a>`).join('')}</nav>`
+  :`<h1>${v==='new'?(draft.target?'Add a game':'New scouting report'):'Scouting reports'}</h1><p class="sub">Paste GameChanger play-by-play. Get spray charts, count tendencies, baserunning and a game plan.</p><div style="height:18px"></div>`}`;
+}
+function render(){
+  let v=(location.hash||'').slice(1);
+  if (!v) v='plan';
+  if (!REPORT_VIEWS[v] && v!=='new' && v!=='reports') v='plan';
+  renderHead(v);
+  let html='';
+  try { html = REPORT_VIEWS[v] ? REPORT_VIEWS[v](getModel()) : v==='new' ? viewNew() : viewReports(); }
+  catch(e){ html=`<div class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p>Check that each game was pasted in full, then rebuild it from New report.</p></div>`; }
+  app.innerHTML = html + `<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray spots are placed by the fielder who played the ball. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), and fielder numbers (6-3, F8, L3, P1).</footer>`;
+  tip.style.display='none'; bindTips(app); wire(v);
+}
+function wire(v){
+  app.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{state.game=b.dataset.game;render();});
+  app.querySelectorAll('[data-pick]').forEach(s=>s.onchange=()=>{state[s.dataset.pick]=s.value;render();});
+  app.querySelectorAll('tr[data-runner]').forEach(t=>{const go=()=>{state.runner=t.dataset.runner;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  app.querySelectorAll('tr[data-hitter]').forEach(t=>{const go=()=>{state.hitter=t.dataset.hitter;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  if (v==='new'){
+    app.querySelectorAll('[data-gtext]').forEach(t=>{t.oninput=()=>{draft.games[+t.dataset.gtext].text=t.value;}; t.onchange=()=>{draft.games[+t.dataset.gtext].text=t.value;render();}; t.onpaste=()=>setTimeout(()=>{draft.games[+t.dataset.gtext].text=t.value;render();},0);});
+    app.querySelectorAll('[data-glabel]').forEach(t=>t.oninput=()=>{draft.games[+t.dataset.glabel].label=t.value;});
+    app.querySelectorAll('[data-gremove]').forEach(b=>b.onclick=()=>{draft.games.splice(+b.dataset.gremove,1);render();});
+    app.querySelectorAll('input[name=opp]').forEach(r=>r.onchange=()=>{draft.opp=r.value;render();});
+    $('#addgame').onclick=()=>{draft.games.push({label:'G'+(draft.games.length+1),text:''});render();};
+    $('#build').onclick=()=>{
+      const games=draft.games.filter(g=>g.text.trim()).map((g,i)=>({label:(g.label||'').trim()||('G'+(i+1)),text:g.text}));
+      let r;
+      if (draft.target){ r=reports.find(x=>x.id===draft.target); if(r){ r.games=r.games.concat(games); r.updated=Date.now(); } }
+      if (!r){ r={id:'r'+Date.now(),opp:draft.opp,games,updated:Date.now()}; reports.unshift(r); }
+      store.set(STORE,reports); setActive(r.id); draft={games:[{label:'G1',text:''}],opp:null}; location.hash='#plan';
+    };
+  }
+  if (v==='reports'){
+    app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{setActive(b.dataset.open);location.hash='#plan';});
+    app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(!confirm('Delete this report from this browser?'))return; reports=reports.filter(r=>r.id!==b.dataset.del); store.set(STORE,reports); if(activeReport().id===b.dataset.del) setActive(SAMPLE.id); render();});
+    app.querySelectorAll('[data-addto]').forEach(b=>b.onclick=()=>{ const src=allReports().find(r=>r.id===b.dataset.addto);
+      if (src.sample){ const copy={id:'r'+Date.now(),opp:src.opp,games:src.games.slice(),updated:Date.now()}; reports.unshift(copy); store.set(STORE,reports); draft={games:[{label:'G'+(copy.games.length+1),text:''}],opp:src.opp,target:copy.id}; }
+      else draft={games:[{label:'G'+(src.games.length+1),text:''}],opp:src.opp,target:src.id};
+      location.hash='#new'; });
+    app.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>{ const r=allReports().find(x=>x.id===b.dataset.share); const box=$('#sharebox'); box.hidden=false; const t=$('#sharecode'); t.value=encodeShare(r); t.focus(); t.select(); try{ navigator.clipboard&&navigator.clipboard.writeText(t.value);}catch(e){} box.scrollIntoView({behavior:'smooth'}); });
+    $('#import').onclick=()=>{ const msg=$('#importmsg'); try{ const o=decodeShare($('#importcode').value); const r={id:'r'+Date.now(),opp:o.opp,games:o.games,updated:Date.now()}; reports.unshift(r); store.set(STORE,reports); setActive(r.id); location.hash='#plan'; }catch(e){ msg.className='err'; msg.textContent='That code didn’t work. Copy the whole code and try again.'; } };
+  }
+}
+addEventListener('hashchange',()=>{ if(location.hash==='#new' && !draft.target && draft.games.every(g=>!g.text)) draft={games:[{label:'G1',text:''}],opp:null}; render(); });
+render();
+</script>
+</body>
+</html>
