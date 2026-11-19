@@ -152,6 +152,12 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .gchip.on{background:var(--board);color:var(--hit);border-color:var(--board)}
 .gchip.on small{color:var(--board-muted)}
 .btn.sm{padding:5px 10px;font-size:13px}
+details.lineup{background:var(--panel);border:1px solid var(--line);padding:10px 14px}
+details.lineup summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+details.lineup summary::-webkit-details-marker{display:none}
+details.lineup .lnames{color:var(--muted);font-size:14px}
+details.lineup .ledit{margin-left:auto;font-size:14px;font-weight:600;text-decoration:underline}
+@media print{details.lineup{display:none!important}}
 #printbar{position:sticky;top:0;z-index:5;background:var(--hit);color:var(--hit-ink);padding:10px 14px;margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 </style>
 </head>
@@ -522,7 +528,23 @@ function roster(){ const t=teamObj(); const R={info:{},removed:[],added:[],delet
 function pinfo(n){ return roster().info[n]||{}; }
 function label(n){ const i=pinfo(n); return (i.num?'#'+i.num+' ':'')+n; }
 function stubHitter(n){ return {name:n,line:'No plate appearances yet',read:'No plate appearances yet.',shade:'No balls in play yet.',pa:[],swings:0,pitches:0,fps:0,fp:0,bip:0}; }
-function hitterNames(M){ const R=roster(); const names=Object.keys(M.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return names; }
+const LINEKEY='dugoutscout.lineup.v1';
+function lineupOf(t){ const all=store.get(LINEKEY,{}); const v=t?all[norm(t.name)]:null; return Array.isArray(v)&&v.length?v:null; }
+function setLineup(t,list){ const all=store.get(LINEKEY,{}); if(list&&list.length) all[norm(t.name)]=list; else delete all[norm(t.name)]; store.set(LINEKEY,all); model=null; }
+function hitterNames(M){ const R=roster(), L=lineupOf(teamObj()); const names=Object.keys(M.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return L?names.filter(n=>L.includes(n)):names; }
+/* everyone available for the lineup picker, in batting order */
+function lineupPool(){ const F=model&&model.full?model.full:model; if(!F) return []; const R=roster(); const names=Object.keys(F.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return names; }
+function lastLineup(){ const F=model&&model.full?model.full:model; if(!F||!F.games.length) return []; const g=F.games[F.games.length-1]; const out=[]; F.pas.filter(p=>p.g===g).forEach(p=>{ if(out.length<9&&!out.includes(p.h)) out.push(p.h); }); return out; }
+let lineupOpen=false;
+function lineupBar(){
+  const t=teamObj(), L=lineupOf(t), pool=lineupPool(); if(!pool.length) return '';
+  const on=n=>!L||L.includes(n);
+  const count=L?L.filter(n=>pool.includes(n)).length:pool.length;
+  const chips=pool.map(n=>`<label class="gchip ${on(n)?'on':''}"><input type="checkbox" data-ltoggle="${esc(n)}" ${on(n)?'checked':''}> ${esc(label(n))}</label>`).join('');
+  return `<details class="lineup" ${lineupOpen?'open':''}><summary><b>Lineup:</b> ${L?`${count} of ${pool.length} hitters`:`Everyone (${pool.length} hitters)`}${L?` <span class="lnames">${L.filter(n=>pool.includes(n)).map(n=>esc(n.split(' ').slice(-1)[0])).join(', ')}</span>`:''}<span class="ledit">${lineupOpen?'Done':'Choose players'}</span></summary>
+  <p class="note" style="margin:6px 0 8px">Check the hitters you expect to face. Hitting tabs, the game plan and the printout focus on them. The Pitchers tab always shows every pitcher.</p>
+  <div class="gpick">${chips}</div><p style="margin:8px 0 0;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-llast>Last game’s lineup</button><button type="button" class="btn sm" data-lall>Everyone</button></p></details>`;
+}
 function hitterOf(M,n){ return M.hitters[n]||stubHitter(n); }
 function gameLabels(t){ const base=t.games.map((g,i)=>(g.label||'').trim()||('G'+(i+1))); const cnt={}; base.forEach(l=>cnt[l]=(cnt[l]||0)+1); const used={}; return base.map((l,i)=>{ let x=l; if(cnt[l]>1){ const d=(t.games[i].date||'').trim(); x=d?l+' ('+d+')':l+' #'+((used[l]=(used[l]||0)+1)); } return x; }); }
 function matchTeam(teams,want){ const w=norm(want); if(!w||!teams.length) return null;
@@ -539,7 +561,7 @@ function setOff(t,list){ const all=store.get(SELKEY,{}); all[norm(t.name)]=list;
 function gameKey(g){ return [g.label||'',g.date||'',String(g.text||'').length].join('|'); }
 function selectedIdx(t){ const off=new Set(offList(t)); return t.games.map((g,i)=>off.has(gameKey(g))?-1:i).filter(i=>i>=0); }
 function getModel(){
-  const t=teamObj(); const sel=selectedIdx(t); const key=JSON.stringify([t.name,t.games.map(g=>[g.label,g.date,g.text.length]),t.roster,sel]);
+  const t=teamObj(); const sel=selectedIdx(t); const L=lineupOf(t); const key=JSON.stringify([t.name,t.games.map(g=>[g.label,g.date,g.text.length]),t.roster,sel,L]);
   if(model&&modelKey===key) return model;
   const labels=gameLabels(t), warn=[], parsed=[];
   t.games.forEach((g,i)=>{ if(!sel.includes(i)) return; const p=ENGINE.parseGame(g.text,labels[i]);
@@ -547,7 +569,16 @@ function getModel(){
     const m=matchTeam(p.teams,t.name);
     if(!m){ warn.push(`<b>${esc(labels[i])}</b>: couldn’t find “${esc(t.name)}” in this play-by-play. It has ${p.teams.map(esc).join(' and ')}. Rename this team’s tab in the Google Sheet to match GameChanger.`); return; }
     p.halves.forEach(h=>{ if(h.bat===m) h.bat=t.name; }); parsed.push(p); });
-  model=ENGINE.build(parsed,t.name,{exclude:roster().removed.concat(ours())}); model.warnings=warn; modelKey=key; return model;
+  const base=roster().removed.concat(ours());
+  const full=ENGINE.build(parsed,t.name,{exclude:base});
+  if(L){
+    const everyone=new Set(Object.keys(full.hitters).concat(Object.keys(full.runners)));
+    const out=[...everyone].filter(n=>!L.includes(n));
+    const lm=ENGINE.build(parsed,t.name,{exclude:base.concat(out)});
+    lm.pitchers=full.pitchers; lm.defense=full.defense; lm.plan.plat=full.plan.plat; lm.plan.bases=full.plan.bases;
+    model=lm;
+  } else model=full;
+  model.full=full; model.warnings=warn; modelKey=key; return model;
 }
 const gOk=g=>state.game==='all'||state.game===g;
 async function load(){
@@ -735,6 +766,7 @@ function viewPrint(M){
   const strip=html=>html.replace(/<section class="below"><h2>Plate appearances<\/h2>[\s\S]*?<\/section>/,'');
   const out=`<div id="printbar"><b>Printable report</b><span>Your print screen opens automatically. Choose <b>Save as PDF</b> for a file, or pick a printer. On iPad: Share → Save to Files.</span><button type="button" class="btn" id="printnow">Print / Save PDF</button><a class="btn" href="#plan">Back to report</a></div>
   <p class="note" style="margin:10px 0 0">Printed ${esc(new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}))} · ${(()=>{ const sel=selectedIdx(t), L=gameLabels(t); return `${sel.length} game${sel.length===1?'':'s'}${sel.length<t.games.length?' (of '+t.games.length+')':''}: ${sel.map(i=>esc(L[i])).join(', ')}`; })()}</p>
+  ${lineupOf(t)?`<p class="note" style="margin:2px 0 0">Lineup: ${hitterNames(M).map(n=>esc(label(n))).join(', ')}</p>`:''}
   <div class="print-page first">${viewPlan(M)}</div>
   <div class="print-page"><section class="below"><h2>Hitter cards</h2><p class="note">Lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Yellow reached base, white out. Triangle hard hit.</p><div class="hcards">${cards}</div></section></div>
   <div class="print-page">${strip(viewSpray(M))}</div>
@@ -760,10 +792,16 @@ function render(){
   if(!t) html=viewHome();
   else if(!t.games.length) html=`<section class="card" style="margin-top:24px"><h2>No games yet</h2><p>Add a game for ${esc(t.name)} in the Google Sheet, then open this link again.</p></section>`;
   else { try{ const M=getModel(); if(state.game!=='all'&&!M.games.includes(state.game)) state.game='all';
-      html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+REPORT_VIEWS[v](M); }
+      html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+(v==='roster'?'':`<div style="margin-top:16px">${lineupBar()}</div>`)+REPORT_VIEWS[v](M); }
     catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
   app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
   tip.style.display='none'; bindTips(app); wire(v);
+  const lb=app.querySelector('details.lineup'); if(lb) lb.ontoggle=()=>{ lineupOpen=lb.open; const e=lb.querySelector('.ledit'); if(e) e.textContent=lb.open?'Done':'Choose players'; };
+  app.querySelectorAll('[data-ltoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(), pool=lineupPool(); let L=lineupOf(t)||pool.slice(); const n=c.dataset.ltoggle;
+    if(c.checked){ if(!L.includes(n)) L.push(n); } else { if(L.filter(x=>pool.includes(x)).length<=1){ c.checked=true; return; } L=L.filter(x=>x!==n); }
+    const all=pool.every(x=>L.includes(x)); setLineup(t, all?null:pool.filter(x=>L.includes(x))); render(); });
+  app.querySelectorAll('[data-lall]').forEach(b=>b.onclick=()=>{ setLineup(teamObj(),null); render(); });
+  app.querySelectorAll('[data-llast]').forEach(b=>b.onclick=()=>{ const L=lastLineup(); if(L.length) setLineup(teamObj(),L); render(); });
   if(v==='print'&&t&&t.games.length){ const pb=$('#printnow'); if(pb) pb.onclick=()=>window.print(); const key=t.name; if(printedFor!==key){ printedFor=key; setTimeout(()=>{ try{ window.print(); }catch(e){} },700); } }
   else printedFor='';
 }
