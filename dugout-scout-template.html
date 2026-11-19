@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dugout Scout Template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e7ece6; --panel:#ffffff; --ink:#15241c; --muted:#56675d; --line:#cdd6ce; --soft:#f1f4f0;
+  --board:#15241c; --board-ink:#f4f7f2; --board-muted:#b9c8bf; --hit:#f2c014; --hit-ink:#2a2100; --cs:#d9472f;
+  --grass:#2e6a3e; --grass2:#357548; --dirt:#b5875b; --chalk:#f4f7f2; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1813;--panel:#16241d;--ink:#e4ede6;--muted:#9bb0a3;--line:#2a3c33;--soft:#1c2c24;--board:#0a120e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1813;--panel:#16241d;--ink:#e4ede6;--muted:#9bb0a3;--line:#2a3c33;--soft:#1c2c24;--board:#0a120e;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--board)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 48px}
+header.board{background:var(--board);color:var(--board-ink)}
+header.board .wrap{padding-top:16px;padding-bottom:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font:700 20px/1 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;color:var(--hit);text-decoration:none;letter-spacing:.3px}
+.toplinks{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:600 15px "Source Sans 3",sans-serif;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
+.btn.ghost{background:transparent;color:var(--board-ink);border-color:#3a4f43}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+h1{font:700 clamp(34px,6vw,58px)/0.95 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;margin:18px 0 0;letter-spacing:.5px}
+.sub{color:var(--board-muted);font-size:15px;margin:6px 0 0}
+nav.tabs{display:flex;gap:2px;margin-top:18px;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{font:600 19px/1 "Barlow Condensed",sans-serif;color:#c9d6ce;text-decoration:none;padding:12px 16px 13px;white-space:nowrap;border-top:3px solid transparent}
+nav.tabs a:hover{color:#fff}
+nav.tabs a[aria-current="page"]{background:var(--bg);color:var(--ink);border-top-color:var(--hit)}
+a:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--hit);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;margin-top:24px}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.stage,.card,.below{background:var(--panel);border:1px solid var(--line);padding:16px}
+.below{margin-top:24px}
+.stage h2,.side h2,.below h2,.card h2{font:600 26px/1.1 "Barlow Condensed",sans-serif;margin:0 0 4px}
+.note{color:var(--muted);font-size:14px;margin:0 0 10px}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 12px}
+.filters label{font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
+select,input[type=text]{font:inherit;font-size:15px;color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:6px 8px;min-width:170px}
+textarea{width:100%;min-height:180px;font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:10px;resize:vertical}
+.seg{display:inline-flex;border:1px solid var(--line);flex-wrap:wrap}
+.seg button{font:600 15px "Source Sans 3",sans-serif;background:var(--soft);color:var(--ink);border:0;padding:6px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--board);color:var(--hit)}
+svg.field{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:5px}
+.side{display:flex;flex-direction:column;gap:16px}
+.plan{background:var(--board);color:var(--board-ink);padding:18px 18px 8px}
+.plan h2{color:var(--hit)}
+.plan .who{color:var(--board-muted);font-size:14px;margin:0 0 10px}
+.plan ol{margin:0;padding:0 0 0 20px}
+.plan li{margin:0 0 10px}
+.plan li b{color:#fff}
+.card h3{font:600 20px/1.2 "Barlow Condensed",sans-serif;margin:0 0 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--soft);padding:8px 10px}
+.stats b{display:block;font:700 26px/1 "Barlow Condensed",sans-serif}
+.stats span{font-size:13px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);background:var(--soft);white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font:700 15px "Barlow Condensed",sans-serif;padding:1px 7px;background:var(--soft);border:1px solid var(--line)}
+.tag.on{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
+.tag.sm{font-size:12px;padding:0 4px}
+tr.pick{cursor:pointer}
+tr.pick:hover td{background:var(--soft)}
+.tip{position:absolute;pointer-events:none;background:var(--board);color:var(--board-ink);padding:6px 10px;font-size:14px;max-width:260px;z-index:20;display:none;border-left:3px solid var(--hit)}
+[data-tip]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+svg.field :not([data-tip]){pointer-events:none}
+.grid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px}
+.grid .h{font-size:13px;color:var(--muted);text-align:center;align-self:end}
+.grid .r{font-size:13px;color:var(--muted);align-self:center;padding-right:4px}
+.cell{padding:10px 6px;text-align:center;border:1px solid var(--line)}
+.cell b{display:block;font:700 28px/1 "Barlow Condensed",sans-serif}
+.cell span,.cell small{font-size:13px;color:var(--muted)}
+.cell small{display:block;font-size:12px;margin-top:4px}
+.tiles{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px}
+.tiles em{font:700 12px/18px "Barlow Condensed",sans-serif;font-style:normal;width:18px;height:18px;text-align:center;border:1px solid var(--line);color:var(--muted)}
+.tiles em.sw{background:var(--hit);border-color:var(--hit);color:var(--hit-ink)}
+.bars div{display:grid;grid-template-columns:150px 1fr 60px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bars .track{background:var(--soft);height:18px;position:relative}
+.bars .fill{position:absolute;inset:0 auto 0 0;background:var(--cs)}
+.bars .fill.ok{background:var(--grass2)}
+.steps{display:grid;gap:16px;margin-top:24px}
+.game{border:1px solid var(--line);background:var(--panel);padding:14px}
+.game header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.game header input{min-width:240px}
+.ok{color:var(--grass2);font-weight:600}
+.err{color:var(--cs);font-weight:600}
+.reports{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.report{border:1px solid var(--line);background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:6px}
+.report h3{font:600 22px/1.1 "Barlow Condensed",sans-serif;margin:0}
+.report .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.choice{display:flex;flex-wrap:wrap;gap:8px}
+.choice label{border:1px solid var(--line);padding:8px 12px;background:var(--soft);cursor:pointer;display:flex;gap:8px;align-items:center}
+footer{color:var(--muted);font-size:14px;margin-top:28px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+@media print{
+  @page{size:letter;margin:0.45in}
+  :root{padding:0!important}
+  body{background:#fff!important;color:#111!important;font-size:12px}
+  body::before,#status,header.board .toplinks,nav.tabs,.filters,.btn,.tip,.print-hide,footer .noprint,#printbar{display:none!important}
+  header.board{background:#fff!important;color:#111!important;border-bottom:2px solid #111}
+  header.board .wrap{padding:0 0 6px}
+  .brand{color:#111!important}
+  h1{font-size:30px;margin:4px 0 0}
+  .sub{color:#333!important}
+  .wrap{max-width:none;padding:0}
+  .layout{grid-template-columns:1fr 1fr!important;gap:14px;margin-top:12px}
+  .stage,.card,.below{border:1px solid #999;background:#fff!important;padding:10px;break-inside:avoid}
+  .plan{background:#fff!important;color:#111!important;border:2px solid #111;padding:10px 12px 2px;break-inside:avoid}
+  .plan h2{color:#111!important;font-size:20px}
+  .plan li b{color:#111!important}
+  .plan .who{color:#444!important}
+  .note,.stats span,.legend{color:#333!important}
+  svg.field,.cell,.tiles em,.legend i,.tag,.bars .fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table{font-size:11px}
+  th,td{padding:4px 6px}
+  .print-page{break-before:page}
+  .print-page.first{break-before:auto}
+  .print-page.first .layout{margin-top:8px}
+  .print-page.first .layout+.layout{margin-top:10px}
+  .plan li{margin:0 0 5px}
+  .plan h2{margin-bottom:2px}
+  .stats b{font-size:20px}
+  .hcards{grid-template-columns:repeat(3,1fr)!important}
+  .hcard{break-inside:avoid}
+}
+.hcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.hcard{border:1px solid var(--line);background:var(--panel);padding:10px}
+.hcard h3{font:600 18px/1.15 "Barlow Condensed",sans-serif;margin:0}
+.hcard .ln{font:700 15px/1.2 "Barlow Condensed",sans-serif;margin:2px 0 4px}
+.hcard p{margin:4px 0 0;font-size:13px}
+
+.gpick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gcount{font-size:13px;color:var(--muted);margin-right:4px}
+.gchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:5px 10px;font-size:14px;font-weight:600;cursor:pointer;user-select:none}
+.gchip input{width:16px;height:16px;margin:0;accent-color:#1d3a26}
+.gchip small{font-weight:400;color:var(--muted)}
+.gchip.on{background:var(--board);color:var(--hit);border-color:var(--board)}
+.gchip.on small{color:var(--board-muted)}
+.btn.sm{padding:5px 10px;font-size:13px}
+details.lineup{background:var(--panel);border:1px solid var(--line);padding:10px 14px}
+details.lineup summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+details.lineup summary::-webkit-details-marker{display:none}
+details.lineup .lnames{color:var(--muted);font-size:14px}
+details.lineup .ledit{margin-left:auto;font-size:14px;font-weight:600;text-decoration:underline}
+@media print{details.lineup{display:none!important}}
+#printbar{position:sticky;top:0;z-index:5;background:var(--hit);color:var(--hit-ink);padding:10px 14px;margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="board"><div class="wrap" id="head"></div></header>
+<main class="wrap" id="app"></main>
+<div class="tip" id="tip" role="status"></div>
+<script>
+/* Scouting engine: reads GameChanger play-by-play text and builds a scouting model. */
+const ENGINE = (() => {
+  const POS = {'pitcher':1,'catcher':2,'first baseman':3,'second baseman':4,'third baseman':5,'shortstop':6,'left fielder':7,'center fielder':8,'right fielder':9};
+  const POS_RE = /(pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)/g;
+  const SPOT = {1:[45,.2],2:[45,.07],3:[82,.36],4:[62,.48],5:[8,.36],6:[28,.48],7:[18,.75],8:[45,.8],9:[72,.75]};
+  const HALF_RE = /^(Top|Bottom)\s+(\d+)(?:st|nd|rd|th)\s*-\s*(.+)$/i;
+  const OUTS_RE = /^(\d)\s+Outs?$/i;
+  const SCORE_RE = /^[A-Za-z0-9.&' ]+\s\d+\s-\s[A-Za-z0-9.&' ]+\s\d+(?:\s*\|\s*(\d)\s+Outs?)?$/;
+  const VERB_RE = /^(.+?)\s(singles|doubles|triples|homers|hits a (?:home run|grand slam|ground ball|pop fly|line drive|fly ball|hard ground ball)|grounds|lines|flies|pops|strikes out|walks|is intentionally walked|is hit by pitch|out on|sacrifices|bunts|reaches|out at first|is out|hits into|hit by pitch)\b/;
+  const ord = n => n + (n%10===1&&n%100!==11?'st':n%10===2&&n%100!==12?'nd':n%10===3&&n%100!==13?'rd':'th');
+
+  function posList(str){ const out=[]; let m; POS_RE.lastIndex=0; while((m=POS_RE.exec(str))) out.push(POS[m[1]]); return out; }
+
+  function parsePitches(line){
+    const toks = line.replace(/\.\s*$/,'').split(/,\s*/);
+    const seq=[], runs=[], changes=[];
+    let wp=0, pb=0, scores=0;
+    toks.forEach(raw => {
+      const t = raw.trim();
+      let m;
+      if (/^Ball\s+\d+$/i.test(t)) seq.push('B');
+      else if (/^Strike\s+\d+\s+looking$/i.test(t)) seq.push('C');
+      else if (/^Strike\s+\d+\s+swinging$/i.test(t)) seq.push('S');
+      else if (/^Strike\s+\d+$/i.test(t)) seq.push('C');
+      else if (/^Foul(\s+bunt|\s+tip)?$/i.test(t)) seq.push('F');
+      else if (/^In play$/i.test(t)) seq.push('X');
+      else if ((m = t.match(/^(.+?)\s+steals\s+(2nd|3rd|home)/i))) runs.push({kind:'SB', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+caught stealing\s+(2nd|3rd|home)/i))) runs.push({kind:'CS', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+picked off at\s+(1st|2nd|3rd)/i))) runs.push({kind:'PO', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+in for pitcher\s+(.+)$/i))) changes.push(m[2].trim().replace(/\.$/,''));
+      else if ((m = t.match(/^Lineup changed:\s*(.+?)\s+in at pitcher/i))) changes.push(m[1].trim().replace(/\.$/,''));
+      if (/on wild pitch/i.test(t)) { wp++; m=t.match(/^(.+?)\s+(advances to|scores)/i); if(m) runs.push({kind:'WP', r:m[1], to:/scores/i.test(t)?'home':(t.match(/to (2nd|3rd)/i)||[])[1], at:seq.length}); }
+      if (/on passed ball/i.test(t)) { pb++; m=t.match(/^(.+?)\s+(advances to|scores)/i); if(m) runs.push({kind:'PB', r:m[1], to:/scores/i.test(t)?'home':(t.match(/to (2nd|3rd)/i)||[])[1], at:seq.length}); }
+      if (/\sscores\b/i.test(t)) scores++;
+    });
+    return {seq, runs, changes, wp, pb, scores};
+  }
+
+  function blocksFrom(lines){
+    const halves=[]; let half=null, ev=null;
+    for (const raw of lines){
+      const line = raw.trim(); if(!line) continue;
+      let m = line.match(HALF_RE);
+      if (m){ half={top:/^top$/i.test(m[1]), inning:+m[2], bat:m[3].trim(), events:[]}; halves.push(half); ev=null; continue; }
+      if (!half) continue;
+      if (/\sat bat$/i.test(line)) continue;
+      if (OUTS_RE.test(line) || SCORE_RE.test(line)){ if(ev){ const o=line.match(OUTS_RE)||line.match(SCORE_RE); if(o&&o[1]!==undefined) ev.outsAfter=+o[1]; } continue; }
+      const isText = /\.$/.test(line) || /,/.test(line);
+      if (!isText){ ev={title:line, lines:[]}; half.events.push(ev); continue; }
+      if (ev) ev.lines.push(line);
+    }
+    return halves;
+  }
+
+  function looksLikePitches(line){
+    const toks=line.replace(/\.\s*$/,'').split(/,\s*/);
+    return toks.some(t=>/^(Ball|Strike|Foul|In play)\b/i.test(t.trim())) || /^(Ball|Strike|Foul|In play|Pickoff|Courtesy|Lineup changed)/i.test(line);
+  }
+
+  function notation(ev, desc){
+    const t = ev.title.toLowerCase();
+    const chunks = desc.replace(/\.\s*$/,'').split(/,\s*/);
+    let chain = posList(chunks[0]);
+    for (let i=1;i<chunks.length;i++){ if (/^(pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)\b/i.test(chunks[i])) chain = chain.concat(posList(chunks[i])); else break; }
+    const errM = desc.match(/error by (pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)/i);
+    const errTail = (!/^error$/.test(t) && errM) ? ', E'+POS[errM[1].toLowerCase()] : '';
+    const bunt = /bunt/i.test(desc);
+    const rbi = chunks.slice(1).filter(c=>/\sscores\b/i.test(c) && !/error/i.test(c)).length + (/home run/.test(t)?1:0);
+    const rbiTag = rbi && !/^error$/.test(t) ? (rbi>1?` (${rbi} RBI)`:' (RBI)') : '';
+    const first = chain[0];
+    let res;
+    if (/^single$/.test(t)) res='1B'+(first?'-'+first:'');
+    else if (/^double$/.test(t)) res='2B'+(first?'-'+first:'');
+    else if (/^triple$/.test(t)) res='3B'+(first?'-'+first:'');
+    else if (/home run/.test(t)){ res='HR'; const fm=desc.match(/(left|center|right)[- ]?(?:center |field|fielder)/i); if(!chain.length&&fm) chain=[{left:7,center:8,right:9}[fm[1].toLowerCase()]]; }
+    else if (/intentional walk/.test(t)) res='IBB';
+    else if (/^walk$/.test(t)) res='BB';
+    else if (/hit by pitch/.test(t)) res='HBP';
+    else if (/dropped 3rd/.test(t)) res=/looking/i.test(desc)?'ꓘ (D3)':'K (D3)';
+    else if (/strikeout/.test(t)) res=/looking/i.test(desc)?'ꓘ':'K';
+    else if (/ground out/.test(t)) res= chain.length>1 ? chain.join('-') : (first? first+'U':'GO');
+    else if (/line out/.test(t)) res='L'+(first||'');
+    else if (/fly out/.test(t)) res='F'+(first||'');
+    else if (/pop out/.test(t)) res='P'+(first||'');
+    else if (/sacrifice fly/.test(t)) res='SF'+(first||'');
+    else if (/sacrifice bunt|sacrifice/.test(t)) res='SAC'+(chain.length?' '+chain.join('-'):'');
+    else if (/fielder.?s choice/.test(t)) res='FC'+(chain.length?' '+chain.join('-'):'');
+    else if (/double play/.test(t)) res=(/lines into|line drive/i.test(desc)?'L':'')+(chain.length?chain.join('-')+' ':'')+'DP';
+    else if (/triple play/.test(t)) res=(/lines into|line drive/i.test(desc)?'L':'')+(chain.length?chain.join('-')+' ':'')+'TP';
+    else if (/^error$/.test(t)) res= errM ? 'E'+POS[errM[1].toLowerCase()] : 'E';
+    else res=ev.title;
+    if (bunt && /^(1B|E)/.test(res)) res+=' (bunt)';
+    return {res: res+errTail+rbiTag, chain, rbi};
+  }
+
+  function battedType(title, desc){
+    const d=desc.toLowerCase(), t=title.toLowerCase();
+    if (/bunt|sacrifices to/.test(d) || /sacrifice bunt/.test(t)) return 'BU';
+    if (/pop fly|pops out/.test(d)) return 'PU';
+    if (/line drive|lines out|lines into/.test(d)) return 'LD';
+    if (/fly ball|flies out|sacrifice fly/.test(d)) return 'FB';
+    if (/ground ball|grounds|ground into/.test(d)) return 'GB';
+    if (/home run/.test(t)) return 'FB';
+    return null;
+  }
+
+  function spot(res, type, chain){
+    const p = chain[0];
+    if (/^HR/.test(res)) return [p?SPOT[p][0]:45,1.06];
+    if (!p) return type==='BU'?[45,.12]:null;
+    let [a,d] = SPOT[p];
+    const outfield = p>=7;
+    if (/^1B/.test(res)) d = outfield ? (type==='GB'?.62:.7) : (p<=2?.2:.5);
+    else if (/^2B/.test(res)) d = outfield ? .92 : .5;
+    else if (/^3B/.test(res)) d = outfield ? .98 : .5;
+    if (type==='BU') d = Math.min(d,.22);
+    return [a,d];
+  }
+
+  function parseGame(text, label){
+    const halves = blocksFrom(text.split(/\r?\n/));
+    if (!halves.length) return {ok:false, error:'No innings found. Paste the play-by-play starting with a line like “Top 1st - Team Name”.'};
+    const rank = h => h.inning*2 + (h.top?0:1);
+    if (rank(halves[0]) > rank(halves[halves.length-1])) { halves.reverse(); halves.forEach(h=>h.events.reverse()); }
+    else if (halves.length===1 && halves[0].events.length>1) { /* single half: leave as is */ }
+    const teams=[...new Set(halves.map(h=>h.bat))];
+    const out={ok:true, label, teams, halves:[]};
+    for (const h of halves){
+      let outs=0; const H={top:h.top, inning:h.inning, bat:h.bat, events:[]};
+      for (const ev of h.events){
+        if (!ev.lines.length) continue;
+        let pitchLine='', desc='';
+        if (ev.lines.length>=2){ pitchLine=ev.lines[0]; desc=ev.lines[ev.lines.length-1]; }
+        else if (looksLikePitches(ev.lines[0])) pitchLine=ev.lines[0]; else desc=ev.lines[0];
+        const P = pitchLine ? parsePitches(pitchLine) : {seq:[],runs:[],changes:[],wp:0,pb:0,scores:0};
+        if (/hit by pitch/i.test(ev.title)) P.seq.push('H');
+        const vm = desc.match(VERB_RE);
+        const batter = vm ? vm[1].trim() : null;
+        const N = desc ? notation(ev, desc) : {res:ev.title, chain:[], rbi:0};
+        const type = desc ? battedType(ev.title, desc) : null;
+        const inPlay = P.seq[P.seq.length-1]==='X';
+        const outsBefore = outs;
+        const outsAfter = ev.outsAfter!==undefined ? ev.outsAfter : outs;
+        outs = outsAfter;
+        const pm = desc.match(/,\s*([^,]+?)\s+pitching\b/);
+        const fieldP = desc.match(/\bpitcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/);
+        const descScores = (desc.match(/\sscores\b/g)||[]).length;
+        const descRuns = [];
+        desc.replace(/\.\s*$/,'').split(/,\s*/).slice(1).forEach(c=>{ let m;
+          if ((m=c.match(/^(.+?)\s+out advancing to\s+(2nd|3rd|home|1st)/i))) descRuns.push({kind:'OA', r:m[1], to:m[2]});
+          else if ((m=c.match(/^(.+?)\s+held up at\s+(2nd|3rd)/i))) descRuns.push({kind:'HELD', r:m[1], to:m[2]});
+          else if ((m=c.match(/^(.+?)\s+advances to\s+(2nd|3rd)\s+on (?:an\s+)?error/i))) descRuns.push({kind:'E', r:m[1], to:m[2]});
+        });
+        const scorers=[]; (pitchLine+', '+desc).split(/,\s*/).forEach(c=>{const m=c.match(/^(.+?)\s+scores\b/i); if(m) scorers.push(m[1].trim());}); const isHR=/home run/i.test(ev.title); if(isHR&&batter) scorers.push(batter);
+        H.events.push({
+          title:ev.title, desc, pitchLine, hard:/\bhard\b/i.test(desc), batter, seq:P.seq.join(''), runs:P.runs, descRuns, changes:P.changes,
+          res:N.res, chain:N.chain, rbi:N.rbi, type, inPlay, spot: inPlay && type ? spot(N.res,type,N.chain) : null,
+          outsBefore, outsAfter, outsMade: Math.max(0,outsAfter-outsBefore),
+          wp:P.wp, pb:P.pb, runsScored: P.scores+descScores+(isHR?1:0), scorers,
+          pitcherNamed: pm ? pm[1].trim().replace(/\.$/,'') : (fieldP ? fieldP[1].trim().replace(/\.$/,'') : null)
+        });
+      }
+      out.halves.push(H);
+    }
+    return out;
+  }
+
+  /* Build the scouting model for one opponent across many games */
+  function build(games, opp, opts){
+    const EX = new Set((opts&&opts.exclude)||[]);
+    const SW = c => c==='S'||c==='F'||c==='X';
+    const pas=[], bip=[], steals=[], other=[], hitters={}, pitchers={}, scored={};
+    const defense={sbAgainst:0, csAgainst:0, pb:0, wp:0, errors:0, catcher:null, oppErrors:[]};
+    games.forEach((g,gi)=>{
+      const gl = g.label || ('G'+(gi+1));
+      let lastP = null;
+      // assign pitchers for halves where opp is fielding
+      const fielding = g.halves.filter(h=>h.bat!==opp);
+      const flat = []; fielding.forEach(h=>h.events.forEach(e=>flat.push(e)));
+      flat.forEach(e=>{ if(e.changes.length) e._chg=e.changes[e.changes.length-1]; });
+      let cur=null; flat.forEach(e=>{ if(e._chg) cur=e._chg; e.pitcher = e.pitcherNamed || cur || null; if(e.pitcherNamed) cur=e.pitcherNamed; });
+      for (let i=flat.length-1, nxt=null;i>=0;i--){ if(flat[i].pitcher) nxt=flat[i].pitcher; else flat[i].pitcher=nxt; }
+      fielding.forEach(h=>h.events.forEach(e=>{
+        const p=e.pitcher||'Unknown pitcher'; if (EX.has(p)) { defense.pb+=e.pb; defense.wp+=e.wp; e.runs.forEach(r=>{ if(r.kind==='SB') defense.sbAgainst++; if(r.kind==='CS') defense.csAgainst++; }); return; } const P=pitchers[p+'|'+gl]=pitchers[p+'|'+gl]||{n:p,g:gl,bf:0,outs:0,h:0,r:0,bb:0,hbp:0,k:0,kl:0,wp:0,pitches:0,firstStrikes:0};
+        if (e.batter){ P.bf++; P.pitches+=e.seq.length; if(e.seq[0]&&e.seq[0]!=='B'&&e.seq[0]!=='H') P.firstStrikes++; }
+        P.outs+=e.outsMade; P.r+=e.runsScored; P.wp+=e.wp;
+        if (/^(1B|2B|3B|HR)/.test(e.res)) P.h++;
+        if (/^(BB|IBB)/.test(e.res)) P.bb++;
+        if (/^HBP/.test(e.res)) P.hbp++;
+        if (/^K/.test(e.res)) P.k++;
+        if (/^ꓘ/.test(e.res)) { P.k++; P.kl++; }
+        defense.pb+=e.pb; defense.wp+=e.wp;
+        e.runs.forEach(r=>{ if(r.kind==='SB') defense.sbAgainst++; if(r.kind==='CS') defense.csAgainst++; });
+        const em=e.desc.match(/error by (pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/i);
+        if (em){ defense.errors++; defense.oppErrors.push({g:gl, inn:ord(h.inning), who:em[2].replace(/\.$/,''), pos:POS[em[1].toLowerCase()]}); }
+        const pl=e.pitchLine.match(/error by catcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/);
+        if (pl){ defense.errors++; defense.oppErrors.push({g:gl, inn:ord(h.inning), who:pl[1].replace(/\.$/,''), pos:2}); }
+        const cm=(e.desc+' '+e.pitchLine).match(/catcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/); if(cm) defense.catcher=cm[1].replace(/\.$/,'');
+      }));
+      // opponent batting
+      g.halves.filter(h=>h.bat===opp).forEach(h=>h.events.forEach(e=>{
+        const inn=ord(h.inning);
+        e.scorers.forEach(s=>{ scored[s]=(scored[s]||0)+1; });
+        e.runs.forEach(r=>{
+          if (EX.has(r.r)) return;
+          const k=r.at; let b=0,s=0; const upto = k>0 ? k-1 : 0;
+          for (let i=0;i<upto;i++){ const c=e.seq[i]; if(c==='B') b++; else if(c==='C'||c==='S'||(c==='F'&&s<2)) s++; }
+          const pitchC = k>0 ? e.seq[k-1] : e.seq[0];
+          const name={B:'Ball',C:'Called strike',S:'Swinging strike',F:'Foul',X:'In play',H:'Hit by pitch'}[pitchC]||'—';
+          const from = r.to==='2nd'?1:r.to==='3rd'?2:r.to==='home'?3:0;
+          if (r.kind==='SB'||r.kind==='CS') steals.push({g:gl,inn,r:r.r,from,to:from+1,res:r.kind,cnt:`${b}-${s}`,pitch:name,bat:e.batter||'',outs:e.outsBefore});
+          else if (r.kind==='PO') other.push({g:gl,inn,r:r.r,play:`Picked off at ${r.to}`});
+          else other.push({g:gl,inn,r:r.r,play:`${r.to==='home'?'Scored':'Took '+r.to} on a ${r.kind==='WP'?'wild pitch':'passed ball'}`});
+        });
+        e.descRuns.filter(r=>!EX.has(r.r)).forEach(r=>other.push({g:gl,inn,r:r.r,play: r.kind==='OA'?`Thrown out advancing to ${r.to}`: r.kind==='HELD'?`Held at ${r.to}`:`Took ${r.to} on an error`}));
+        if (!e.batter || EX.has(e.batter)) return;
+        const pa={g:gl,h:e.batter,inn,seq:e.seq,res:e.res,type:e.type,outs:e.outsBefore};
+        pas.push(pa);
+        const H=hitters[e.batter]=hitters[e.batter]||{name:e.batter,pa:[],games:new Set(),spots:[]};
+        H.pa.push(pa); H.games.add(gl);
+        if (e.inPlay && e.spot) bip.push({g:gl,h:e.batter,inn,type:e.type,res:e.res,a:e.spot[0],d:e.spot[1],hard:!!e.hard,on:/^(1B|2B|3B|HR|E)/.test(e.res)});
+      }));
+    });
+    // hitter lines
+    Object.values(hitters).forEach(H=>{
+      let ab=0,h=0,bb=0,hbp=0,k=0,kl=0,e=0,rbi=0,sac=0; const xbh=[];
+      H.pa.forEach(p=>{ const r=p.res;
+        const walk=/^(BB|IBB)/.test(r), hp=/^HBP/.test(r), sc=/^(SAC|SF)/.test(r);
+        if(walk) bb++; else if(hp) hbp++; else if(sc) sac++; else ab++;
+        if(/^(1B|2B|3B|HR)/.test(r)) h++;
+        const x=r.match(/^(2B|3B|HR)/); if(x) xbh.push(x[1]);
+        if(/^K/.test(r)) k++; if(/^ꓘ/.test(r)) kl++;
+        if(/^E/.test(r)) e++;
+        const m=r.match(/\((\d+ )?RBI\)/); if(m) rbi+= m[1]?+m[1]:1;
+      });
+      const sb=steals.filter(s=>s.r===H.name&&s.res==='SB').length, cs=steals.filter(s=>s.r===H.name&&s.res==='CS').length;
+      const parts=[`${h}-for-${ab}`].concat(xbh, bb?[(bb>1?bb+' ':'')+'BB']:[], hbp?[(hbp>1?hbp+' ':'')+'HBP']:[], k?[(k>1?k+' ':'')+'K']:[], kl?[(kl>1?kl+' ':'')+'ꓘ']:[], e?[(e>1?e+' ':'')+'E']:[], rbi?[(rbi>1?rbi+' ':'')+'RBI']:[], scored[H.name]?[(scored[H.name]>1?scored[H.name]+' ':'')+'R']:[], sb?[(sb>1?sb+' ':'')+'SB']:[], cs?[(cs>1?cs+' ':'')+'CS']:[]);
+      H.line=parts.join(', '); H.ab=ab; H.h=h; H.bb=bb; H.hbp=hbp; H.k=k+kl; H.kl=kl; H.xbh=xbh; H.sb=sb; H.cs=cs; H.r=scored[H.name]||0;
+      H.onBase = H.pa.filter(p=>/^(1B|2B|3B|HR|BB|IBB|HBP|E|FC)/.test(p.res)).length;
+      const ps=[]; H.pa.forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{ps.push({b,s,c,k});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+      H.pitches=ps.length; H.swings=ps.filter(x=>SW(x.c)).length; H.whiffs=ps.filter(x=>x.c==='S').length; H.called=ps.filter(x=>x.c==='C').length;
+      H.fp=H.pa.filter(p=>p.seq.length).length; H.fps=H.pa.filter(p=>SW(p.seq[0])).length;
+      const mine=bip.filter(b=>b.h===H.name); H.bip=mine.length;
+      H.left=mine.filter(b=>b.a<35).length; H.right=mine.filter(b=>b.a>55).length; H.mid=H.bip-H.left-H.right;
+      H.bunts=H.pa.filter(p=>p.type==='BU').length;
+      H.read=hitterRead(H); H.shade=hitterShade(H,mine);
+    });
+    const runners={};
+    steals.forEach(s=>{const R=runners[s.r]=runners[s.r]||{n:s.r,att:0,sb:0,cs:0,zero:0}; R.att++; if(s.res==='SB')R.sb++; else R.cs++; if(s.cnt==='0-0')R.zero++;});
+    Object.values(hitters).forEach(H=>{ if(H.onBase && !runners[H.name]) runners[H.name]={n:H.name,att:0,sb:0,cs:0,zero:0}; });
+    Object.values(runners).forEach(R=>{ R.onb = hitters[R.n]?hitters[R.n].onBase:null; R.read = runnerRead(R); });
+    const pitcherList=Object.values(pitchers).filter(p=>p.bf>0);
+    pitcherList.forEach(p=>{ p.ip=Math.floor(p.outs/3)+'.'+(p.outs%3); p.note=pitcherNote(p); });
+    const model={opp, games:games.map((g,i)=>g.label||('G'+(i+1))), pas, bip, steals, other, hitters, runners, pitchers:pitcherList, defense};
+    model.plan=gamePlan(model);
+    return model;
+  }
+
+  function pct(a,n){ return n?Math.round(a/n*100):0; }
+  function first(n){ return n; }
+  function hitterRead(H){
+    const r=[];
+    if (H.fp>=2){ if (H.fps/H.fp>=0.5) r.push(`Swings early: went after ${H.fps} of ${H.fp} first pitches.`); else if (H.fps/H.fp<=0.25) r.push(`Takes the first pitch: swung at ${H.fps} of ${H.fp}.`); }
+    if (H.pitches>=8){ const s=H.swings/H.pitches; if(s<=0.3) r.push(`Very patient. Swung at ${H.swings} of ${H.pitches} pitches.`); else if(s>=0.55) r.push(`Aggressive. Swung at ${H.swings} of ${H.pitches} pitches.`); }
+    if (H.whiffs>=3) r.push(`Swings and misses: ${H.whiffs} swinging strikes.`);
+    if (H.kl>=1 && H.kl===H.k) r.push(`${H.kl>1?'Both':'His'} strikeout${H.kl>1?'s were':' was'} looking (ꓘ).`);
+    if (H.bunts) r.push(`Bunted ${H.bunts} time${H.bunts>1?'s':''}.`);
+    if (H.xbh.length) r.push(`Extra-base hits: ${H.xbh.join(', ')}.`);
+    if (!r.length) r.push(`${H.pa.length} plate appearance${H.pa.length>1?'s':''}: ${H.pa.map(p=>p.res).join(', ')}.`);
+    return r.join(' ');
+  }
+  function hitterShade(H,mine){
+    if (!H.bip) return 'No balls in play yet.';
+    const deep = mine.filter(b=>b.d>=0.85).length;
+    let s;
+    if (H.bip>=2 && H.left/H.bip>=0.6) s=`Shade him to the left side. ${H.left} of ${H.bip} balls in play went to third, short or left.`;
+    else if (H.bip>=2 && H.right/H.bip>=0.6) s=`Shade him to the right side. ${H.right} of ${H.bip} balls in play went to first, second or right.`;
+    else s=`Play him straight up. ${H.left} left, ${H.mid} middle, ${H.right} right.`;
+    if (deep) s+=' Play the outfield deep; he has hit it to the fence.';
+    if (H.bunts) s+=' Corners in when he squares.';
+    return s;
+  }
+  function runnerRead(R){
+    if (!R.att) return R.onb ? `Has not run in ${R.onb} time${R.onb>1?'s':''} on base.` : 'No steal attempts.';
+    return `${R.sb} for ${R.att} stealing${R.zero?`, ${R.zero} on the first pitch (0-0)`:''}.`;
+  }
+  function pitcherNote(p){
+    const free=p.bb+p.hbp; const n=[];
+    if (p.bf) { const rate=free/p.bf; if(rate>=0.25) n.push(`Walked or hit ${free} of ${p.bf}.`); else if(rate<=0.1) n.push(`Throws strikes: ${free} free bases in ${p.bf} batters.`); }
+    if (p.bf>=4) n.push(`First-pitch strikes on ${p.firstStrikes} of ${p.bf}.`);
+    if (p.kl>=2 && p.kl>=p.k/2) n.push(`${p.kl} of ${p.k} strikeouts looking.`);
+    if (p.wp) n.push(`${p.wp} wild pitch${p.wp>1?'es':''}.`);
+    return n.join(' ');
+  }
+  function gamePlan(M){
+    const SW=c=>c==='S'||c==='F'||c==='X';
+    const P={plat:[],mound:[],bases:[],hold:[],field:[]};
+    const pas=M.pas; const fp=pas.filter(p=>p.seq.length), fps=fp.filter(p=>SW(p.seq[0])).length;
+    const ps=[]; pas.forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{ps.push({b,s,c,k});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+    const ahead=ps.filter(x=>x.s===0&&x.b>=2), aheadSw=ahead.filter(x=>SW(x.c)).length;
+    const ks=pas.filter(p=>/^(K|ꓘ)/.test(p.res)), kl=pas.filter(p=>/^ꓘ/.test(p.res));
+    const xbh=pas.filter(p=>/^(2B|3B|HR)/.test(p.res));
+    // mound
+    if (fp.length){ const r=fps/fp.length; P.mound.push(r<0.4?`<b>Throw strike one.</b> ${M.opp} swung at ${fps} of ${fp.length} first pitches (${pct(fps,fp.length)}%).`:`<b>Start them off the plate.</b> ${M.opp} swung at ${fps} of ${fp.length} first pitches (${pct(fps,fp.length)}%).`); }
+    if (ahead.length>=3 && aheadSw===0) P.mound.push(`<b>Throw strikes when behind.</b> They never swung at 2-0 or 3-0 (${ahead.length} pitches).`);
+    if (ks.length>=2 && kl.length/ks.length>=0.5) P.mound.push(`<b>Finish on the corners.</b> ${kl.length} of ${ks.length} strikeouts were looking (ꓘ).`);
+    if (pas.length>=10 && ks.length/pas.length<0.15) P.mound.push(`<b>Expect contact.</b> They struck out in ${ks.length} of ${pas.length} plate appearances.`);
+    const xb=[...new Set(xbh.map(p=>p.h))]; if (xb.length) P.mound.push(`<b>Be careful with ${xb.length>1?xb.slice(0,-1).join(', ')+' and '+xb[xb.length-1]:xb[0]}.</b> ${xb.length>1?'They have':'He has'} the extra-base hits.`);
+    // field
+    const bip=M.bip; if (bip.length>=4){ const L=bip.filter(b=>b.a<35).length, R=bip.filter(b=>b.a>55).length;
+      if (L/bip.length>=0.45) P.field.push(`<b>Shade the left side.</b> ${L} of ${bip.length} balls in play went to third, short or left.`);
+      else if (R/bip.length>=0.45) P.field.push(`<b>Shade the right side.</b> ${R} of ${bip.length} balls in play went to first, second or right.`);
+      const g5=bip.filter(b=>/^5-/.test(b.res)||/^FC 5/.test(b.res)).length; if(g5>=3) P.field.push(`<b>Third baseman, expect action.</b> ${g5} outs were ground balls to third.`);
+    }
+    const bunters=Object.values(M.hitters).filter(h=>h.bunts).map(h=>first(h.name)); if (bunters.length) P.field.push(`<b>Corners in when ${bunters.join(' or ')} squares.</b>`);
+    Object.values(M.hitters).filter(h=>h.bip>=3 && (h.left/h.bip>=0.75||h.right/h.bip>=0.75)).forEach(h=>{const L=h.left>h.right; P.field.push(`<b>Shade ${h.name} to the ${L?'left':'right'} side.</b> ${L?h.left:h.right} of ${h.bip} balls in play went there.`);});
+    // hold
+    const st=M.steals; if (st.length){ const z=st.filter(s=>s.cnt==='0-0').length; const runners=Object.values(M.runners).filter(r=>r.att).sort((a,b)=>b.att-a.att);
+      P.hold.push(`<b>${z>st.length/2?'Throw over or pitch out on 0-0':'Hold runners'}</b> with ${runners.slice(0,4).map(r=>first(r.n)).join(', ')} on. ${z} of ${st.length} steal attempts came on the first pitch.`);
+      const sb=st.filter(s=>s.res==='SB').length; P.hold.push(`<b>They are ${sb} for ${st.length} stealing.</b> Catcher, be ready early in the count.`);
+      const non=Object.values(M.runners).filter(r=>!r.att && r.onb>=3); if(non.length){ const nm=non.map(r=>r.n); const list=nm.length>1?nm.slice(0,-1).join(', ')+' or '+nm[nm.length-1]:nm[0]; P.hold.push(`<b>Don’t worry about ${list} at first.</b> ${non.length>1?'None of them has':'He hasn’t'} tried to steal in ${non.reduce((a,r)=>a+r.onb,0)} combined times on base.`);}
+    } else P.hold.push('<b>No steal attempts recorded.</b> Keep normal holds.');
+    // plate / bases vs their pitchers + defense
+    const pit=M.pitchers; const bf=pit.reduce((a,p)=>a+p.bf,0), free=pit.reduce((a,p)=>a+p.bb+p.hbp,0), outs=pit.reduce((a,p)=>a+p.outs,0);
+    if (bf){ if (free/bf>=0.2) P.plat.push(`<b>Take until they throw a strike.</b> Their pitchers walked or hit ${free} of ${bf} batters in ${Math.floor(outs/3)}${outs%3?(outs%3===1?'⅓':'⅔'):''} innings.`);
+      const fs=pit.reduce((a,p)=>a+p.firstStrikes,0); if (fs/bf>=0.6) P.plat.push(`<b>Be ready to swing early.</b> They threw a first-pitch strike to ${fs} of ${bf} batters.`);
+      const best=pit.filter(p=>p.bf>=6).sort((a,b)=>(a.bb+a.hbp+a.h)/a.bf-(b.bb+b.hbp+b.h)/b.bf)[0]; if(best) P.plat.push(`<b>Toughest arm: ${best.n}.</b> ${best.h} hit${best.h===1?'':'s'} and ${best.bb+best.hbp} free bases in ${best.bf} batters.`);
+    }
+    const D=M.defense, att=D.sbAgainst+D.csAgainst;
+    if (att) P.bases.push(`<b>${D.csAgainst? 'Pick your spots' : 'Run freely'}.</b> Opponents are ${D.sbAgainst} for ${att} stealing${D.catcher?` against catcher ${D.catcher}`:''}.`);
+    if (D.wp+D.pb>=2) P.bases.push(`<b>Look for balls in the dirt.</b> ${D.wp} wild pitch${D.wp===1?'':'es'} and ${D.pb} passed ball${D.pb===1?'':'s'}.`);
+    if (D.errors) P.bases.push(`<b>Make them field it.</b> ${D.errors} error${D.errors>1?'s':''}: ${D.oppErrors.map(e=>'E'+e.pos+' '+first(e.who)).join(', ')}.`);
+    Object.keys(P).forEach(k=>{ if(!P[k].length) P[k].push('Not enough data yet. Add another game.'); });
+    return P;
+  }
+
+  return {parseGame, build, ord};
+})();
+if (typeof module!=='undefined') module.exports=ENGINE;
+
+</script>
+<script>
+
+const API='https://script.google.com/macros/s/AKfycbwwwIBBYIMqEROEuYnFgxnlu8KC5h6j-eEUzfoDb2kfxuxMNiYDftscYZD1_3hGqQ/exec';
+const CACHE='dugoutscout.sheet.v1';
+const store={ get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } } };
+const $=s=>document.querySelector(s), app=$('#app'), head=$('#head'), tip=$('#tip');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SW=c=>c==='S'||c==='F'||c==='X';
+let DATA=store.get(CACHE,null);
+let loadState={busy:false,err:'',fresh:false};
+let state={game:'all',hitter:'all',runner:'all'};
+let model=null, modelKey=null;
+const teamName=(new URLSearchParams(location.search).get('team')||'').trim();
+const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function teamObj(){ if(!DATA||!teamName) return null; return DATA.teams.find(t=>norm(t.name)===norm(teamName))||null; }
+function teamLink(name){ return location.origin+location.pathname+'?team='+encodeURIComponent(name); }
+function ours(){ return (DATA&&DATA.ours||[]).map(n=>String(n).replace(/\s+/g,' ').trim()); }
+function roster(){ const t=teamObj(); const R={info:{},removed:[],added:[],deleted:[]}; if(!t) return R; const our=new Set(ours().map(n=>n.toLowerCase())); (t.roster||[]).filter(p=>!our.has(p.name.toLowerCase())).forEach(p=>{ R.info[p.name]={num:p.num,pos:p.pos,bats:p.bats,notes:p.notes}; if(p.out) R.removed.push(p.name); else R.added.push(p.name); }); return R; }
+function pinfo(n){ return roster().info[n]||{}; }
+function label(n){ const i=pinfo(n); return (i.num?'#'+i.num+' ':'')+n; }
+function stubHitter(n){ return {name:n,line:'No plate appearances yet',read:'No plate appearances yet.',shade:'No balls in play yet.',pa:[],swings:0,pitches:0,fps:0,fp:0,bip:0}; }
+const LINEKEY='dugoutscout.lineup.v1';
+function lineupOf(t){ const all=store.get(LINEKEY,{}); const v=t?all[norm(t.name)]:null; return Array.isArray(v)&&v.length?v:null; }
+function setLineup(t,list){ const all=store.get(LINEKEY,{}); if(list&&list.length) all[norm(t.name)]=list; else delete all[norm(t.name)]; store.set(LINEKEY,all); model=null; }
+function hitterNames(M){ const R=roster(), L=lineupOf(teamObj()); const names=Object.keys(M.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return L?names.filter(n=>L.includes(n)):names; }
+/* everyone available for the lineup picker, in batting order */
+function lineupPool(){ const F=model&&model.full?model.full:model; if(!F) return []; const R=roster(); const names=Object.keys(F.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return names; }
+function lastLineup(){ const F=model&&model.full?model.full:model; if(!F||!F.games.length) return []; const g=F.games[F.games.length-1]; const out=[]; F.pas.filter(p=>p.g===g).forEach(p=>{ if(out.length<9&&!out.includes(p.h)) out.push(p.h); }); return out; }
+let lineupOpen=false;
+function lineupBar(){
+  const t=teamObj(), L=lineupOf(t), pool=lineupPool(); if(!pool.length) return '';
+  const on=n=>!L||L.includes(n);
+  const count=L?L.filter(n=>pool.includes(n)).length:pool.length;
+  const chips=pool.map(n=>`<label class="gchip ${on(n)?'on':''}"><input type="checkbox" data-ltoggle="${esc(n)}" ${on(n)?'checked':''}> ${esc(label(n))}</label>`).join('');
+  return `<details class="lineup" ${lineupOpen?'open':''}><summary><b>Lineup:</b> ${L?`${count} of ${pool.length} hitters`:`Everyone (${pool.length} hitters)`}${L?` <span class="lnames">${L.filter(n=>pool.includes(n)).map(n=>esc(n.split(' ').slice(-1)[0])).join(', ')}</span>`:''}<span class="ledit">${lineupOpen?'Done':'Choose players'}</span></summary>
+  <p class="note" style="margin:6px 0 8px">Check the hitters you expect to face. Hitting tabs, the game plan and the printout focus on them. The Pitchers tab always shows every pitcher.</p>
+  <div class="gpick">${chips}</div><p style="margin:8px 0 0;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-llast>Last game’s lineup</button><button type="button" class="btn sm" data-lall>Everyone</button></p></details>`;
+}
+function hitterOf(M,n){ return M.hitters[n]||stubHitter(n); }
+function gameLabels(t){ const base=t.games.map((g,i)=>(g.label||'').trim()||('G'+(i+1))); const cnt={}; base.forEach(l=>cnt[l]=(cnt[l]||0)+1); const used={}; return base.map((l,i)=>{ let x=l; if(cnt[l]>1){ const d=(t.games[i].date||'').trim(); x=d?l+' ('+d+')':l+' #'+((used[l]=(used[l]||0)+1)); } return x; }); }
+function matchTeam(teams,want){ const w=norm(want); if(!w||!teams.length) return null;
+  const exact=teams.find(x=>norm(x)===w); if(exact) return exact;
+  const inside=teams.filter(x=>norm(x).includes(w)||w.includes(norm(x))); if(inside.length===1) return inside[0];
+  const words=s=>norm(s).split(' ').filter(Boolean);
+  const close=(a,b)=>a===b||(a.length>3&&b.length>3&&(a.slice(0,-2)===b.slice(0,-2)||a.indexOf(b)===0||b.indexOf(a)===0));
+  const score=x=>{ const tw=words(x); return words(want).filter(a=>tw.some(b=>close(a,b))).length; };
+  const ranked=teams.map(x=>({x,s:score(x)})).sort((a,b)=>b.s-a.s);
+  return ranked[0].s>=2&&(ranked.length<2||ranked[0].s>ranked[1].s)?ranked[0].x:null; }
+const SELKEY='dugoutscout.gamesoff.v1';
+function offList(t){ const all=store.get(SELKEY,{}); return (all[norm(t.name)]||[]); }
+function setOff(t,list){ const all=store.get(SELKEY,{}); all[norm(t.name)]=list; store.set(SELKEY,all); model=null; }
+function gameKey(g){ return [g.label||'',g.date||'',String(g.text||'').length].join('|'); }
+function selectedIdx(t){ const off=new Set(offList(t)); return t.games.map((g,i)=>off.has(gameKey(g))?-1:i).filter(i=>i>=0); }
+function getModel(){
+  const t=teamObj(); const sel=selectedIdx(t); const L=lineupOf(t); const key=JSON.stringify([t.name,t.games.map(g=>[g.label,g.date,g.text.length]),t.roster,sel,L]);
+  if(model&&modelKey===key) return model;
+  const labels=gameLabels(t), warn=[], parsed=[];
+  t.games.forEach((g,i)=>{ if(!sel.includes(i)) return; const p=ENGINE.parseGame(g.text,labels[i]);
+    if(!p.ok){ warn.push(`<b>${esc(labels[i])}</b>: ${esc(p.error)}`); return; }
+    const m=matchTeam(p.teams,t.name);
+    if(!m){ warn.push(`<b>${esc(labels[i])}</b>: couldn’t find “${esc(t.name)}” in this play-by-play. It has ${p.teams.map(esc).join(' and ')}. Rename this team’s tab in the Google Sheet to match GameChanger.`); return; }
+    p.halves.forEach(h=>{ if(h.bat===m) h.bat=t.name; }); parsed.push(p); });
+  const base=roster().removed.concat(ours());
+  const full=ENGINE.build(parsed,t.name,{exclude:base});
+  if(L){
+    const everyone=new Set(Object.keys(full.hitters).concat(Object.keys(full.runners)));
+    const out=[...everyone].filter(n=>!L.includes(n));
+    const lm=ENGINE.build(parsed,t.name,{exclude:base.concat(out)});
+    lm.pitchers=full.pitchers; lm.defense=full.defense; lm.plan.plat=full.plan.plat; lm.plan.bases=full.plan.bases;
+    model=lm;
+  } else model=full;
+  model.full=full; model.warnings=warn; modelKey=key; return model;
+}
+const gOk=g=>state.game==='all'||state.game===g;
+async function load(){
+  if(!/^https:/.test(API)){ loadState={busy:false,err:'setup',fresh:false}; render(); return; }
+  loadState={busy:true,err:'',fresh:false}; paintStatus();
+  try{ const res=await fetch(API+(API.indexOf('?')>=0?'&':'?')+'t='+Date.now()); const j=await res.json(); if(!j.ok) throw new Error(j.error||'error');
+    DATA={fetched:Date.now(),teams:j.teams||[],ours:j.ours||[],sheetUrl:j.sheetUrl||''}; store.set(CACHE,DATA); model=null; loadState={busy:false,err:'',fresh:true}; }
+  catch(e){ loadState={busy:false,err:DATA?'offline':'nodata',fresh:false}; }
+  render();
+}
+function when(ts){ const d=new Date(ts), now=new Date(); const t=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); return d.toDateString()===now.toDateString()?t:d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})+' '+t; }
+function statusText(){
+  if(loadState.busy) return 'Getting the latest from the Google Sheet…';
+  if(loadState.err==='setup') return 'Not connected to a Google Sheet yet.';
+  if(loadState.err==='offline') return `<span style="color:#ffd27a">No connection. Showing the copy from ${esc(when(DATA.fetched))}.</span> <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Try again</button>`;
+  if(loadState.err==='nodata') return `<span style="color:#ffb4a6">Couldn’t reach the Google Sheet.</span> <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Try again</button>`;
+  return DATA?`Up to date as of ${esc(when(DATA.fetched))} <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Refresh</button>`:'';
+}
+function paintStatus(){ const el=document.getElementById('status'); if(el){ el.innerHTML=statusText(); const b=document.getElementById('reload'); if(b) b.onclick=()=>load(); } const sw=document.getElementById('teamswitch'); if(sw) sw.onchange=()=>{ if(sw.value) location.href=teamLink(sw.value)+(location.hash&&teamObj()?location.hash:''); }; }
+
+/* ---------- field ---------- */
+const HX=300,HY=470,R=410;
+const pt=(a,d)=>{const t=(135-a)*Math.PI/180;return [HX+R*d*Math.cos(t),HY-R*d*Math.sin(t)];};
+const BASE={0:pt(0,0),1:pt(90,.3),2:pt(45,.4243),3:pt(0,.3),4:pt(0,0)};
+function fieldSVG(inner,label,vb){
+  const [lx,ly]=pt(0,1),[rx,ry]=pt(90,1),[ilx,ily]=pt(0,.55),[irx,iry]=pt(90,.55),[mx,my]=pt(45,.21);
+  const stripes=[.2,.4,.6,.8].map(d=>{const [a,b]=pt(0,d+.1),[c,e]=pt(90,d+.1),[f,g]=pt(0,d),[h,j]=pt(90,d);return `<path d="M${f},${g} A${R*d},${R*d} 0 0 1 ${h},${j} L${c},${e} A${R*(d+.1)},${R*(d+.1)} 0 0 0 ${a},${b} Z" fill="var(--grass2)"/>`}).join('');
+  const bases=[1,2,3].map(b=>{const [x,y]=BASE[b];return `<rect x="${x-7}" y="${y-7}" width="14" height="14" fill="var(--chalk)" transform="rotate(45 ${x} ${y})"/>`}).join('');
+  return `<svg class="field" viewBox="${vb||'0 0 600 500'}" role="img" aria-label="${esc(label)}">
+  <path d="M${HX},${HY} L${lx},${ly} A${R},${R} 0 0 1 ${rx},${ry} Z" fill="var(--grass)"/>${stripes}
+  <path d="M${HX},${HY} L${ilx},${ily} A${R*.55},${R*.55} 0 0 1 ${irx},${iry} Z" fill="var(--dirt)"/><circle cx="${HX}" cy="${HY-6}" r="22" fill="var(--dirt)"/>
+  <path d="M${BASE[0][0]},${BASE[0][1]-30} L${BASE[1][0]-28},${BASE[1][1]} L${BASE[2][0]},${BASE[2][1]+30} L${BASE[3][0]+28},${BASE[3][1]} Z" fill="var(--grass)"/>
+  <circle cx="${mx}" cy="${my}" r="15" fill="var(--dirt)"/>
+  <path d="M${HX},${HY} L${lx},${ly} M${HX},${HY} L${rx},${ry}" stroke="var(--chalk)" stroke-width="2"/>
+  <path d="M${HX},${HY} L${BASE[1][0]},${BASE[1][1]} L${BASE[2][0]},${BASE[2][1]} L${BASE[3][0]},${BASE[3][1]} Z" fill="none" stroke="var(--chalk)" stroke-width="1.5" opacity=".7"/>
+  ${bases}<path d="M${HX-7},${HY-4} h14 v6 l-7,6 l-7,-6 Z" fill="var(--chalk)"/>${inner}</svg>`;
+}
+function sprayField(list){
+  const seen=[];
+  const DASH={LD:'',GB:'5 5',FB:'16 7',PU:'16 7',BU:'1.5 5'};
+  const items=list.map(b=>{
+    const k=seen.filter(q=>Math.abs(q.a-b.a)<4&&Math.abs(q.d-b.d)<.06).length; seen.push(b);
+    let [x,y]=pt(b.a,b.d); if(k){x+=[0,15,-15][k%3];y-=Math.floor(k/3)*15;}
+    const col=b.on?'var(--hit)':'#ffffff', edge=b.on?'#5c4600':'#1d3a26';
+    const tl=(b.hard?'Hard-hit ':'')+(({GB:'ground ball',LD:'line drive',FB:'fly ball',PU:'pop-up',BU:'bunt'}[b.type])||'');
+    const d=`M${HX},${HY-6} L${x},${y}`, dash=DASH[b.type]||'';
+    const tipTxt=`<b>${esc(b.h)}</b><br>${esc(b.g)}, ${esc(b.inn)} inning: ${esc(b.res)}<br>${tl}`;
+    return {line:`<path d="${d}" fill="none" stroke="#10241a" stroke-opacity=".55" stroke-width="5" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''}/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''} stroke-opacity="${b.on?1:.9}"/><path d="${d}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke" data-tip="${tipTxt}"/>`,
+            dot: b.hard ? `<path d="M${x+10},${y} L${x-6},${y-8} L${x-6},${y+8} Z" transform="rotate(${(Math.atan2(y-(HY-6),x-HX)*180/Math.PI).toFixed(1)} ${x} ${y})" fill="${col}" stroke="${edge}" stroke-width="1.5" stroke-linejoin="round" tabindex="0" data-tip="${tipTxt}"/>` : `<circle cx="${x}" cy="${y}" r="5.5" fill="${col}" stroke="${edge}" stroke-width="1.5" tabindex="0" data-tip="${tipTxt}"/>`};
+  });
+  return fieldSVG(items.map(i=>i.line).join('')+items.map(i=>i.dot).join(''),'Spray chart of balls in play');
+}
+const legend=()=>`<div class="legend" style="align-items:center"><span><i style="background:var(--hit)"></i>Reached base</span><span><i style="background:#fff;border:1px solid #1d3a26"></i>Out</span><span style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Normal contact</span><span style="display:inline-flex;align-items:center;gap:5px"><svg width="16" height="14" aria-hidden="true"><path d="M14,7 L2,1 L2,13 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Hard hit</span>${[['','Line drive'],['5 5','Ground ball'],['16 7','Fly ball or pop-up'],['1.5 5','Bunt']].map(([d,t])=>`<span style="display:inline-flex;align-items:center;gap:6px"><svg width="44" height="10" aria-hidden="true"><line x1="2" y1="5" x2="42" y2="5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" ${d?`stroke-dasharray="${d}"`:''}/></svg>${t}</span>`).join('')}</div>`;
+
+function bindTips(root){
+  root.querySelectorAll('[data-tip]').forEach(el=>{
+    const show=e=>{tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';const r=el.getBoundingClientRect();const x=(e&&e.clientX)||r.left+r.width/2,y=(e&&e.clientY)||r.top;tip.style.left=(Math.max(8,Math.min(x+12,innerWidth-270))+scrollX)+'px';tip.style.top=(y+14+scrollY)+'px';};
+    el.addEventListener('mousemove',show);el.addEventListener('focus',()=>show());
+    el.addEventListener('mouseleave',()=>{ if(!touchMode) tip.style.display='none'; });el.addEventListener('blur',()=>{ if(!touchMode) tip.style.display='none'; });
+    el.addEventListener('click',e=>{e.stopPropagation();show(e);});
+  });
+}
+function gameSeg(M){
+  const t=teamObj(); if(!t) return '';
+  const labels=gameLabels(t), sel=selectedIdx(t);
+  const chips=t.games.map((g,i)=>`<label class="gchip ${sel.includes(i)?'on':''}"><input type="checkbox" data-gtoggle="${i}" ${sel.includes(i)?'checked':''}> ${esc(labels[i])}${g.date&&labels[i].indexOf(g.date)<0?` <small>${esc(g.date)}</small>`:''}</label>`).join('');
+  return `<div class="gpick" role="group" aria-label="Games to include"><span class="gcount">Using ${sel.length} of ${t.games.length} game${t.games.length===1?'':'s'}</span>${chips}${t.games.length>1?`<button type="button" class="btn sm" data-gall>All games</button><button type="button" class="btn sm" data-glatest>Latest only</button>`:''}</div>`;
+}
+function pick(key,list,allLabel,labelText){
+  return `<label>${labelText} <select data-pick="${key}"><option value="all">${allLabel}</option>${list.map(n=>`<option value="${esc(n)}" ${state[key]===n?'selected':''}>${esc(label(n))}</option>`).join('')}</select></label>`;
+}
+const planBox=(t,who,items)=>`<section class="plan" aria-label="Game plan"><h2>${t}</h2>${who?`<p class="who">${who}</p>`:''}<ol>${items.map(i=>`<li>${i}</li>`).join('')}</ol></section>`;
+const pct=(a,n)=>n?Math.round(a/n*100):0;
+
+/* ---------- report views ---------- */
+function viewPlan(M){
+  const bip=M.bip.filter(b=>gOk(b.g)), pas=M.pas.filter(p=>gOk(p.g));
+  const fp=pas.filter(p=>p.seq.length), fps=fp.filter(p=>SW(p.seq[0])).length;
+  const D=M.defense, att=D.sbAgainst+D.csAgainst, free=M.pitchers.reduce((a,p)=>a+p.bb+p.hbp,0), bf=M.pitchers.reduce((a,p)=>a+p.bf,0);
+  return `<div class="layout"><section class="stage"><h2>Where ${esc(M.opp)} puts the ball</h2><p class="note">Every ball in play from ${M.games.length} game${M.games.length>1?'s':''}. Yellow reached base, white was an out. Use the tabs to dig into hitters, counts, running and pitching.</p><div class="filters">${gameSeg(M)}</div>${sprayField(bip)}${legend()}</section>
+  <div class="side">${planBox('At the plate','Facing their pitchers',M.plan.plat)}${planBox('On the mound','Pitching to their hitters',M.plan.mound)}</div></div>
+  <div class="layout"><div class="side">${planBox('On the bases','Running on their defense',M.plan.bases)}${planBox('Holding runners','',M.plan.hold)}</div><div class="side">${planBox('In the field','',M.plan.field)}
+  <section class="card"><h3>At a glance</h3><div class="stats"><div><b>${free} of ${bf}</b><span>batters walked or hit by their pitchers</span></div><div><b>${att?D.sbAgainst+' of '+att:'—'}</b><span>steals allowed</span></div><div><b>${fps} of ${fp.length}</b><span>first pitches their hitters swung at</span></div></div></section></div></div>`;
+}
+function viewSpray(M){
+  const names=hitterNames(M); if(state.hitter!=='all'&&!names.includes(state.hitter)) state.hitter='all'; const h=state.hitter, H=h==='all'?null:hitterOf(M,h);
+  const list=M.bip.filter(b=>gOk(b.g)&&(h==='all'||b.h===h));
+  const L=list.filter(b=>b.a<35).length, Mi=list.filter(b=>b.a>=35&&b.a<=55).length, Rt=list.length-L-Mi, on=list.filter(b=>b.on).length;
+  const pas=M.pas.filter(p=>gOk(p.g)&&(h==='all'||p.h===h));
+  const plan=h==='all'?planBox('Defending '+esc(M.opp),'All hitters',M.plan.field):planBox('Defending '+esc(label(h)),[pinfo(h).pos,pinfo(h).bats?'bats '+pinfo(h).bats:''].filter(Boolean).map(esc).join(', '),[`<b>Where to play him:</b> ${esc(H.shade)}`,`<b>His approach:</b> ${esc(H.read)}`].concat(pinfo(h).notes?[`<b>Coach’s notes:</b> ${esc(pinfo(h).notes)}`]:[]));
+  const rows=pas.map(p=>`<tr><td>${esc(p.h)}</td><td>${esc(p.g)}</td><td>${esc(p.inn)}</td><td><span class="tag ${/^(1B|2B|3B|HR|E|BB|IBB|HBP)/.test(p.res)?'on':''}">${esc(p.res)}</span></td><td>${[...p.seq].map(c=>`<span class="tag sm ${SW(c)?'on':''}">${c}</span>`).join(' ')}</td></tr>`).join('');
+  const lines=names.map(n=>{const x=hitterOf(M,n), i=pinfo(n);return `<tr class="pick" data-hitter="${esc(n)}" tabindex="0"><td class="num">${esc(i.num||'')}</td><td>${esc(n)}</td><td>${esc(i.pos||'')}</td><td>${esc(i.bats||'')}</td><td>${esc(x.line)}</td><td class="num">${x.pa.length}</td><td class="num">${x.pitches?pct(x.swings,x.pitches)+'%':'—'}</td><td class="num">${x.fp?x.fps+' of '+x.fp:'—'}</td><td>${esc(i.notes?x.read+' Notes: '+i.notes:x.read)}</td></tr>`}).join('');
+  return `<div class="layout"><section class="stage"><h2>${h==='all'?esc(M.opp)+' spray chart':esc(label(h))}</h2><p class="note">${list.length} balls in play: ${L} left side, ${Mi} middle, ${Rt} right side. ${on} reached base. Hover or tap a dot for the play.</p>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${h!=='all'?'<button type="button" class="btn" data-allhitters>Show all hitters</button>':''}${gameSeg(M)}</div>${sprayField(list)}${legend()}<p class="note" style="margin:8px 0 0">Tap or hover over a mark to see the play.</p></section>
+  <div class="side">${plan}${h==='all'?'':`<section class="card"><h3>Line</h3><p style="margin:0;font:700 22px/1.2 'Barlow Condensed',sans-serif">${esc(H.line)}</p></section>`}</div></div>
+  <section class="below"><h2>Hitters</h2><div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Hitter</th><th>Pos.</th><th>Bats</th><th>Line</th><th class="num">PA</th><th class="num">Swing %</th><th class="num">1st-pitch swings</th><th>Read</th></tr></thead><tbody>${lines}</tbody></table></div><p class="note" style="margin:8px 0 0">Tap a hitter to see his spray chart.</p></section>
+  <section class="below"><h2>Plate appearances</h2><p class="note">Pitches: B ball, C called strike, S swinging strike, F foul, X in play, H hit by pitch. Yellow letters are swings.</p><div class="tablewrap"><table><thead><tr><th>Hitter</th><th>Game</th><th>Inning</th><th>Result</th><th>Pitches</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No plate appearances for this filter.</td></tr>'}</tbody></table></div></section>`;
+}
+function viewCounts(M){
+  const names=hitterNames(M); if(state.hitter!=='all'&&!names.includes(state.hitter)) state.hitter='all'; const h=state.hitter, P=[];
+  M.pas.filter(p=>gOk(p.g)&&(h==='all'||p.h===h)).forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{P.push({b,s,c,k,p});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+  const fp=P.filter(x=>x.k===0),fs=fp.filter(x=>SW(x.c)).length,two=P.filter(x=>x.s===2),ts=two.filter(x=>SW(x.c)).length,ah=P.filter(x=>x.s===0&&x.b>=2),as=ah.filter(x=>SW(x.c)).length;
+  let g='<div class="grid"><div></div>'+[0,1,2,3].map(b=>`<div class="h">${b} ball${b===1?'':'s'}</div>`).join('');
+  for(let s=0;s<3;s++){g+=`<div class="r">${s} strike${s===1?'':'s'}</div>`;for(let b=0;b<4;b++){const L=P.filter(x=>x.b===b&&x.s===s),w=L.filter(x=>SW(x.c)).length,r=L.length?w/L.length:0;
+    const tiles=h==='all'?'':`<div class="tiles">${L.map(x=>`<em class="${SW(x.c)?'sw':''}" title="${esc(x.p.g+' '+x.p.inn)}">${x.c}</em>`).join('')}</div>`;
+    g+=`<div class="cell" style="background:rgba(242,192,20,${(r*0.85).toFixed(2)})"><span>${b}-${s}</span><b>${L.length?pct(w,L.length)+'%':'—'}</b><small>${w} of ${L.length} swung</small>${tiles}</div>`;}}
+  g+='</div>';
+  const items=h==='all'?M.plan.mound:[`<b>First pitch:</b> swung at ${fs} of ${fp.length}. ${fp.length&&fs/fp.length<.4?'Throw a strike to start him.':'He’ll swing early; start him off the plate.'}`,`<b>Two strikes:</b> swung at ${ts} of ${two.length}.`,`<b>His approach:</b> ${esc(hitterOf(M,h).read)}`].concat(pinfo(h).notes?[`<b>Coach’s notes:</b> ${esc(pinfo(h).notes)}`]:[]);
+  return `<div class="layout"><section class="stage"><h2>${h==='all'?'Swing rate by count':esc(label(h))+' by count'}</h2><p class="note">How often they swung in each count. Darker yellow means more swings.${h==='all'?' Pick a hitter to see every pitch he saw.':' Each tile is one pitch; yellow tiles are swings.'}</p>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${gameSeg(M)}</div>${g}</section>
+  <div class="side">${planBox('Pitching to '+esc(h==='all'?M.opp:label(h)),'',items)}
+  <section class="card"><h3>Key counts</h3><div class="stats"><div><b>${pct(fs,fp.length)}%</b><span>swing on the first pitch (${fs} of ${fp.length})</span></div><div><b>${pct(ts,two.length)}%</b><span>swing with two strikes</span></div><div><b>${as} of ${ah.length}</b><span>swings at 2-0 and 3-0</span></div></div></section></div></div>`;
+}
+function viewRunning(M){
+  if(state.runner!=='all'&&!M.runners[state.runner]) state.runner='all';
+  const r=state.runner, list=M.steals.filter(s=>gOk(s.g)&&(r==='all'||s.r===r));
+  const groups={}; list.forEach(s=>{(groups[s.from+'-'+s.to]=groups[s.from+'-'+s.to]||[]).push(s);});
+  const [mdx,mdy]=pt(45,.21);
+  const arrows=Object.values(groups).map(gr=>{
+    const [x1,y1]=BASE[gr[0].from],[x2,y2]=BASE[gr[0].to]; const cx=(x1+x2)/2,cy=(y1+y2)/2; let nx=cx-mdx,ny=cy-mdy; const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    const paths=gr.map((s,i)=>{const bend=14+i*7,qx=cx+nx*bend,qy=cy+ny*bend,col=s.res==='SB'?'var(--hit)':'var(--cs)';
+      return `<path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" marker-end="url(#ah-${s.res})"/><path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="transparent" stroke-width="18" pointer-events="stroke" tabindex="0" data-tip="<b>${esc(s.r)}</b><br>${esc(s.g)} ${esc(s.inn)}: ${s.res==='SB'?'stole':'caught stealing'} ${['','','2nd','3rd','home'][s.to]}<br>Count ${s.cnt}, ran on: ${esc(s.pitch.toLowerCase())}<br>${s.outs} out, ${esc(s.bat)} batting"/>`;}).join('');
+    const zero=gr.filter(s=>s.cnt==='0-0').length, l1=`${gr.length} attempt${gr.length>1?'s':''} to ${['','','2nd','3rd','home'][gr[0].to]}`, l2=zero===gr.length?(gr.length>1?'all on 0-0':'on 0-0'):'counts '+gr.map(s=>s.cnt).join(', ');
+    const lx=cx+nx*(26+gr.length*6), ly=cy+ny*(26+gr.length*6);
+    return paths+`<text x="${lx}" y="${ly}" text-anchor="${nx>0?'start':'end'}" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="17" fill="var(--chalk)" stroke="var(--grass)" stroke-width="3" paint-order="stroke">${l1}<tspan x="${lx}" dy="17" font-weight="600" font-size="15">${esc(l2)}</tspan></text>`;
+  }).join('');
+  const defs=`<defs>${['SB','CS'].map(k=>`<marker id="ah-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--${k==='SB'?'hit':'cs'})"/></marker>`).join('')}</defs>`;
+  const sb=list.filter(s=>s.res==='SB').length, z=list.filter(s=>s.cnt==='0-0').length;
+  const R=Object.values(M.runners).sort((a,b)=>b.att-a.att||(b.onb||0)-(a.onb||0));
+  const rows=R.map(x=>`<tr class="pick" data-runner="${esc(x.n)}" tabindex="0"><td>${esc(x.n)}</td><td class="num">${x.onb==null?'—':x.onb}</td><td class="num">${x.att}</td><td class="num">${x.sb}</td><td class="num">${x.cs}</td><td class="num">${x.zero}</td><td>${esc(x.read)}</td></tr>`).join('');
+  const other=M.other.filter(o=>gOk(o.g)&&(r==='all'||o.r===r)).map(o=>`<li>${esc(o.g)} ${esc(o.inn)}, ${esc(o.r)}: ${esc(o.play)}</li>`).join('');
+  const plan=r==='all'?planBox('Holding their runners','',M.plan.hold):planBox('Holding '+esc(r),'',[`<b>Tendency:</b> ${esc((M.runners[r]||{read:'No attempts.'}).read)}`,list.length?`<b>When he runs:</b> ${list.map(s=>s.cnt).join(', ')}. Throw over before the first pitch.`:'<b>No steal attempts.</b> Focus on the hitter.']);
+  return `<div class="layout"><section class="stage"><h2>${r==='all'?'Steal attempts':esc(r)}</h2><p class="note">${list.length} attempt${list.length===1?'':'s'}: ${sb} stolen, ${list.length-sb} caught, ${z} on the first pitch (0-0). Yellow arrows are steals, red is caught stealing.</p>
+  <div class="filters">${pick('runner',R.map(x=>x.n),'All runners','Runner')}${gameSeg(M)}</div>${fieldSVG(defs+arrows,'Steal attempts drawn between bases','20 215 560 290')}</section>
+  <div class="side">${plan}${other?`<section class="card"><h3>Other running plays</h3><ul style="margin:0;padding-left:18px">${other}</ul></section>`:''}</div></div>
+  <section class="below"><h2>Runners</h2><div class="tablewrap"><table><thead><tr><th>Runner</th><th class="num">On base</th><th class="num">Attempts</th><th class="num">SB</th><th class="num">CS</th><th class="num">Ran on 0-0</th><th>Read</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No runners yet.</td></tr>'}</tbody></table></div><p class="note" style="margin:8px 0 0">Click a runner to show his attempts. Steals are logged on the pitch listed just before them in the play-by-play.</p></section>`;
+}
+function viewPitchers(M){
+  const list=M.pitchers.filter(p=>gOk(p.g)), D=M.defense, att=D.sbAgainst+D.csAgainst;
+  const bars=list.map(p=>{const v=(p.bb+p.hbp)/p.bf;return `<div><span>${esc(p.n)} <small style="color:var(--muted)">${esc(p.g)}</small></span><span class="track"><span class="fill ${v<.2?'ok':''}" style="width:${Math.min(100,Math.round(v/.6*100))}%"></span></span><b>${p.bb+p.hbp} of ${p.bf}</b></div>`}).join('');
+  const rows=list.map(p=>`<tr><td>${esc(p.g)}</td><td>${esc(p.n)}</td><td class="num">${p.ip}</td><td class="num">${p.bf}</td><td class="num">${p.pitches}</td><td class="num">${p.h}</td><td class="num">${p.r}</td><td class="num">${p.bb}</td><td class="num">${p.hbp}</td><td class="num">${p.k}</td><td class="num">${p.wp}</td><td>${esc(p.note)}</td></tr>`).join('');
+  return `<div class="layout"><section class="stage"><h2>Free bases by pitcher</h2><p class="note">Walks plus hit batters out of batters faced. Green is under one in five.</p><div class="filters">${gameSeg(M)}</div><div class="bars">${bars||'<p class="empty">No pitching data.</p>'}</div></section>
+  <div class="side">${planBox('Hitting against '+esc(M.opp),'',M.plan.plat)}${planBox('Running on their defense','',M.plan.bases)}
+  <section class="card"><h3>Their defense</h3><div class="stats"><div><b>${att?D.sbAgainst+' of '+att:'—'}</b><span>steals allowed${D.catcher?', catcher '+esc(D.catcher):''}</span></div><div><b>${D.wp+D.pb}</b><span>wild pitches and passed balls</span></div><div><b>${D.errors}</b><span>errors</span></div></div></section></div></div>
+  <section class="below"><h2>Pitching lines</h2><div class="tablewrap"><table><thead><tr><th>Game</th><th>Pitcher</th><th class="num">IP</th><th class="num">BF</th><th class="num">Pitches</th><th class="num">H</th><th class="num">R</th><th class="num">BB</th><th class="num">HBP</th><th class="num">K</th><th class="num">WP</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note" style="margin:8px 0 0">R counts every run that scored while he was pitching. K includes called third strikes (ꓘ).</p></section>`;
+}
+
+
+
+/* ---------- roster (read-only, from the sheet) ---------- */
+function viewRoster(M){
+  const t=teamObj(), R=roster();
+  const found=[...new Set(Object.keys(M.hitters).concat(M.pitchers.map(p=>p.n),Object.keys(M.runners)))];
+  const all=found.concat(R.added.filter(n=>!found.includes(n))).concat(R.removed.filter(n=>!found.includes(n)&&!R.added.includes(n)));
+  const pit={}; M.pitchers.forEach(p=>{ (pit[p.n]=pit[p.n]||[]).push(p.ip+' IP ('+p.g+')'); });
+  const rows=all.map(n=>{ const i=R.info[n]||{}, out=R.removed.includes(n), H=M.hitters[n];
+    const what=[H?`${H.pa.length} PA, ${H.line}`:'', pit[n]?'Pitched '+pit[n].join(', '):''].filter(Boolean).join(' · ')||(out?'Left out of the report':'No plays yet');
+    return `<tr style="${out?'opacity:.55':''}"><td class="num">${esc(i.num||'')}</td><td><b>${esc(n)}</b></td><td>${esc(i.pos||'')}</td><td>${esc(i.bats||'')}</td><td>${esc(i.notes||'')}</td><td>${out?'No':'Yes'}</td><td style="font-size:14px;color:var(--muted)">${esc(what)}</td></tr>`; }).join('');
+  return `<section class="below"><h2>Roster</h2><p class="note">Numbers, positions, bats, notes, and who’s left out come from the roster columns (F–K) on this team’s tab in the Google Sheet. Change them there and this page updates the next time it’s opened.${DATA&&DATA.sheetUrl?` <a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">Open the Google Sheet</a> (coaches with edit access).`:''}</p>
+  <div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Player</th><th>Pos.</th><th>Bats</th><th>Coach’s notes</th><th>In report</th><th>From the games</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No players yet.</td></tr>'}</tbody></table></div></section>`;
+}
+/* ---------- home: list of teams ---------- */
+function viewHome(){
+  if(loadState.err==='setup') return `<section class="card" style="margin-top:24px"><h2>Almost ready</h2><p>This page isn’t connected to a Google Sheet yet. Finish the setup steps, then this page will list every team in your sheet.</p></section>`;
+  if(!DATA) return `<section class="card" style="margin-top:24px"><h2>${loadState.busy?'Loading…':'Can’t reach the Google Sheet'}</h2><p class="note">${loadState.busy?'Getting your scouting reports.':'Check your connection and tap Try again at the top.'}</p></section>`;
+  const want=teamName&&!teamObj()?`<section class="card" style="margin-top:24px"><p class="err" style="margin:0">No team named “${esc(teamName)}” is in the Google Sheet. It may have been renamed or removed. Pick a team below.</p></section>`:'';
+  const cards=DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<article class="report"><h3>${esc(t.name)}</h3><span class="note">${t.games.length} game${t.games.length===1?'':'s'}${t.games.length?': '+t.games.map(g=>esc(g.label||'')+(g.date?' ('+esc(g.date)+')':'')).join(', '):''}</span>
+    <div class="actions"><a class="btn primary" href="${esc(teamLink(t.name))}">Open report</a></div></article>`).join('');
+  return `${want}<div class="layout" style="grid-template-columns:1fr"><section class="stage"><h2>Scouting reports</h2><p class="note">Every team tab in your Google Sheet. Pick one to open its report. New games and new teams show up here automatically.</p>
+  <p style="margin:0 0 14px"><button type="button" class="btn" id="sharesite">Share Dugout Scout with coaches</button></p>
+  <div class="reports">${cards||'<p class="empty">No teams yet. In the Google Sheet, use Dugout Scout → New team or Add a game.</p>'}</div><p id="copymsg" class="note" style="margin:10px 0 0"></p></section>
+  <section class="card"><h2>Adding games</h2><p class="note" style="margin:0">Open the Google Sheet${DATA.sheetUrl?` (<a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">link</a>)`:''} and use <b>Dugout Scout → Add a game</b>. Pick the team (or type a new one) and paste the play-by-play. Each team has its own tab. Coaches see new games the next time they open the site.</p></section></div>`;
+}
+/* ---------- shell ---------- */
+const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
+/* ---------- printable report ---------- */
+function viewPrint(M){
+  const keep=Object.assign({},state); state={game:'all',hitter:'all',runner:'all'};
+  const t=teamObj(), R=roster();
+  const names=hitterNames(M).filter(n=>M.hitters[n]);
+  const cards=names.map(n=>{ const H=M.hitters[n], i=R.info[n]||{}; const list=M.bip.filter(b=>b.h===n);
+    return `<article class="hcard"><h3>${esc(label(n))}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
+      <p class="ln">${esc(H.line)}</p>${list.length?sprayField(list):'<p class="note">No balls in play.</p>'}
+      <p><b>Approach:</b> ${esc(H.read)}</p><p><b>Play him:</b> ${esc(H.shade)}</p>${i.notes?`<p><b>Notes:</b> ${esc(i.notes)}</p>`:''}</article>`; }).join('');
+  const strip=html=>html.replace(/<section class="below"><h2>Plate appearances<\/h2>[\s\S]*?<\/section>/,'');
+  const out=`<div id="printbar"><b>Printable report</b><span>Your print screen opens automatically. Choose <b>Save as PDF</b> for a file, or pick a printer. On iPad: Share → Save to Files.</span><button type="button" class="btn" id="printnow">Print / Save PDF</button><a class="btn" href="#plan">Back to report</a></div>
+  <p class="note" style="margin:10px 0 0">Printed ${esc(new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}))} · ${(()=>{ const sel=selectedIdx(t), L=gameLabels(t); return `${sel.length} game${sel.length===1?'':'s'}${sel.length<t.games.length?' (of '+t.games.length+')':''}: ${sel.map(i=>esc(L[i])).join(', ')}`; })()}</p>
+  ${lineupOf(t)?`<p class="note" style="margin:2px 0 0">Lineup: ${hitterNames(M).map(n=>esc(label(n))).join(', ')}</p>`:''}
+  <div class="print-page first">${viewPlan(M)}</div>
+  <div class="print-page"><section class="below"><h2>Hitter cards</h2><p class="note">Lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Yellow reached base, white out. Triangle hard hit.</p><div class="hcards">${cards}</div></section></div>
+  <div class="print-page">${strip(viewSpray(M))}</div>
+  <div class="print-page">${viewCounts(M)}</div>
+  <div class="print-page">${viewRunning(M)}</div>
+  <div class="print-page">${viewPitchers(M)}</div>`;
+  state=keep; return out;
+}
+let printedFor='';
+function renderHead(v,t){
+  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
+  const labels=t?gameLabels(t):[];
+  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">Dugout Scout</a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" style="min-width:200px;background:#0f1d16;color:var(--board-ink);border-color:#3a4f43"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
+  ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
+  <div id="status" class="sub" style="margin-top:6px;font-size:14px"></div>
+  ${t?`<nav class="tabs" aria-label="Report sections">${tabs.map(([k,x])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${x}</a>`).join('')}</nav>`:'<div style="height:18px"></div>'}`;
+  paintStatus();
+}
+function render(){
+  let v=(location.hash||'').slice(1); if(!REPORT_VIEWS[v]) v='plan';
+  const t=teamObj(); renderHead(v,t);
+  let html='';
+  if(!t) html=viewHome();
+  else if(!t.games.length) html=`<section class="card" style="margin-top:24px"><h2>No games yet</h2><p>Add a game for ${esc(t.name)} in the Google Sheet, then open this link again.</p></section>`;
+  else { try{ const M=getModel(); if(state.game!=='all'&&!M.games.includes(state.game)) state.game='all';
+      html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+(v==='roster'?'':`<div style="margin-top:16px">${lineupBar()}</div>`)+REPORT_VIEWS[v](M); }
+    catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
+  app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
+  tip.style.display='none'; bindTips(app); wire(v);
+  const lb=app.querySelector('details.lineup'); if(lb) lb.ontoggle=()=>{ lineupOpen=lb.open; const e=lb.querySelector('.ledit'); if(e) e.textContent=lb.open?'Done':'Choose players'; };
+  app.querySelectorAll('[data-ltoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(), pool=lineupPool(); let L=lineupOf(t)||pool.slice(); const n=c.dataset.ltoggle;
+    if(c.checked){ if(!L.includes(n)) L.push(n); } else { if(L.filter(x=>pool.includes(x)).length<=1){ c.checked=true; return; } L=L.filter(x=>x!==n); }
+    const all=pool.every(x=>L.includes(x)); setLineup(t, all?null:pool.filter(x=>L.includes(x))); render(); });
+  app.querySelectorAll('[data-lall]').forEach(b=>b.onclick=()=>{ setLineup(teamObj(),null); render(); });
+  app.querySelectorAll('[data-llast]').forEach(b=>b.onclick=()=>{ const L=lastLineup(); if(L.length) setLineup(teamObj(),L); render(); });
+  if(v==='print'&&t&&t.games.length){ const pb=$('#printnow'); if(pb) pb.onclick=()=>window.print(); const key=t.name; if(printedFor!==key){ printedFor=key; setTimeout(()=>{ try{ window.print(); }catch(e){} },700); } }
+  else printedFor='';
+}
+function wire(v){
+  app.querySelectorAll('[data-gtoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(); if(!t) return; const g=t.games[+c.dataset.gtoggle]; const k=gameKey(g); let off=offList(t).filter(x=>t.games.some(y=>gameKey(y)===x));
+      if(c.checked) off=off.filter(x=>x!==k); else { if(selectedIdx(t).length<=1){ c.checked=true; return; } off.push(k); } setOff(t,off); render(); });
+  app.querySelectorAll('[data-gall]').forEach(b=>b.onclick=()=>{ const t=teamObj(); setOff(t,[]); render(); });
+  app.querySelectorAll('[data-glatest]').forEach(b=>b.onclick=()=>{ const t=teamObj(); const last=t.games.length-1; setOff(t,t.games.filter((g,i)=>i!==last).map(gameKey)); render(); });
+  app.querySelectorAll('[data-pick]').forEach(s=>s.onchange=()=>{state[s.dataset.pick]=s.value;render();});
+  app.querySelectorAll('[data-allhitters]').forEach(b=>b.onclick=()=>{state.hitter='all';render();});
+  app.querySelectorAll('tr[data-runner]').forEach(t=>{const go=()=>{state.runner=t.dataset.runner;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  app.querySelectorAll('tr[data-hitter]').forEach(t=>{const go=()=>{state.hitter=t.dataset.hitter;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  const ss=$('#sharesite'); if(ss) ss.onclick=async()=>{ const link=location.origin+location.pathname, msg=$('#copymsg');
+    if(navigator.share&&touchMode){ try{ await navigator.share({title:'Dugout Scout',url:link}); return; }catch(e){} }
+    let ok=false; try{ await navigator.clipboard.writeText(link); ok=true; }catch(e){}
+    msg.className=ok?'ok':'note'; msg.innerHTML=ok?`Copied. That one link opens every scouting report, now and for the rest of the season.`:`Copy this link: <span style="user-select:all;word-break:break-all">${esc(link)}</span>`; };
+}
+
+let touchMode=false;
+addEventListener('pointerdown',e=>{ touchMode = e.pointerType!=='mouse'; },true);
+addEventListener('touchstart',()=>{ touchMode=true; },{capture:true,passive:true});
+addEventListener('click',()=>{ tip.style.display='none'; });
+
+
+render(); load();
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && !loadState.busy && (!DATA || Date.now()-DATA.fetched>30000)) load(); });
+addEventListener('online',()=>load());
+addEventListener('hashchange',render);
+</script>
+</body>
+</html>
