@@ -76,7 +76,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tag.sm{font-size:12px;padding:0 4px}
 tr.pick{cursor:pointer}
 tr.pick:hover td{background:var(--soft)}
-.tip{position:fixed;pointer-events:none;background:var(--board);color:var(--board-ink);padding:6px 10px;font-size:14px;max-width:260px;z-index:20;display:none;border-left:3px solid var(--hit)}
+.tip{position:absolute;pointer-events:none;background:var(--board);color:var(--board-ink);padding:6px 10px;font-size:14px;max-width:260px;z-index:20;display:none;border-left:3px solid var(--hit)}
+[data-tip]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+svg.field :not([data-tip]){pointer-events:none}
 .grid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px}
 .grid .h{font-size:13px;color:var(--muted);text-align:center;align-self:end}
 .grid .r{font-size:13px;color:var(--muted);align-self:center;padding-right:4px}
@@ -526,9 +528,10 @@ const legend=()=>`<div class="legend"><span><i style="background:var(--hit)"></i
 
 function bindTips(root){
   root.querySelectorAll('[data-tip]').forEach(el=>{
-    const show=e=>{tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';const r=el.getBoundingClientRect();const x=(e&&e.clientX)||r.left+r.width/2,y=(e&&e.clientY)||r.top;tip.style.left=Math.min(x+12,innerWidth-270)+'px';tip.style.top=(y+14)+'px';};
+    const show=e=>{tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';const r=el.getBoundingClientRect();const x=(e&&e.clientX)||r.left+r.width/2,y=(e&&e.clientY)||r.top;tip.style.left=(Math.max(8,Math.min(x+12,innerWidth-270))+scrollX)+'px';tip.style.top=(y+14+scrollY)+'px';};
     el.addEventListener('mousemove',show);el.addEventListener('focus',()=>show());
-    el.addEventListener('mouseleave',()=>tip.style.display='none');el.addEventListener('blur',()=>tip.style.display='none');
+    el.addEventListener('mouseleave',()=>{ if(!touchMode) tip.style.display='none'; });el.addEventListener('blur',()=>{ if(!touchMode) tip.style.display='none'; });
+    el.addEventListener('click',e=>{e.stopPropagation();show(e);});
   });
 }
 function gameSeg(M){
@@ -560,9 +563,9 @@ function viewSpray(M){
   const rows=pas.map(p=>`<tr><td>${esc(p.h)}</td><td>${esc(p.g)}</td><td>${esc(p.inn)}</td><td><span class="tag ${/^(1B|2B|3B|HR|E|BB|IBB|HBP)/.test(p.res)?'on':''}">${esc(p.res)}</span></td><td>${[...p.seq].map(c=>`<span class="tag sm ${SW(c)?'on':''}">${c}</span>`).join(' ')}</td></tr>`).join('');
   const lines=names.map(n=>{const x=hitterOf(M,n), i=pinfo(n);return `<tr class="pick" data-hitter="${esc(n)}" tabindex="0"><td class="num">${esc(i.num||'')}</td><td>${esc(n)}</td><td>${esc(i.pos||'')}</td><td>${esc(i.bats||'')}</td><td>${esc(x.line)}</td><td class="num">${x.pa.length}</td><td class="num">${x.pitches?pct(x.swings,x.pitches)+'%':'—'}</td><td class="num">${x.fp?x.fps+' of '+x.fp:'—'}</td><td>${esc(i.notes?x.read+' Notes: '+i.notes:x.read)}</td></tr>`}).join('');
   return `<div class="layout"><section class="stage"><h2>${h==='all'?esc(M.opp)+' spray chart':esc(label(h))}</h2><p class="note">${list.length} balls in play: ${L} left side, ${Mi} middle, ${Rt} right side. ${on} reached base. Hover or tap a dot for the play.</p>
-  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${gameSeg(M)}</div>${sprayField(list)}${legend()}</section>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${h!=='all'?'<button type="button" class="btn" data-allhitters>Show all hitters</button>':''}${gameSeg(M)}</div>${sprayField(list)}${legend()}<p class="note" style="margin:8px 0 0">Tap or hover over a mark to see the play.</p></section>
   <div class="side">${plan}${h==='all'?'':`<section class="card"><h3>Line</h3><p style="margin:0;font:700 22px/1.2 'Barlow Condensed',sans-serif">${esc(H.line)}</p></section>`}</div></div>
-  ${h==='all'?`<section class="below"><h2>Hitters</h2><div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Hitter</th><th>Pos.</th><th>Bats</th><th>Line</th><th class="num">PA</th><th class="num">Swing %</th><th class="num">1st-pitch swings</th><th>Read</th></tr></thead><tbody>${lines}</tbody></table></div><p class="note" style="margin:8px 0 0">Click a hitter to see his spray chart.</p></section>`:''}
+  <section class="below"><h2>Hitters</h2><div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Hitter</th><th>Pos.</th><th>Bats</th><th>Line</th><th class="num">PA</th><th class="num">Swing %</th><th class="num">1st-pitch swings</th><th>Read</th></tr></thead><tbody>${lines}</tbody></table></div><p class="note" style="margin:8px 0 0">Tap a hitter to see his spray chart.</p></section>
   <section class="below"><h2>Plate appearances</h2><p class="note">Pitches: B ball, C called strike, S swinging strike, F foul, X in play, H hit by pitch. Yellow letters are swings.</p><div class="tablewrap"><table><thead><tr><th>Hitter</th><th>Game</th><th>Inning</th><th>Result</th><th>Pitches</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No plate appearances for this filter.</td></tr>'}</tbody></table></div></section>`;
 }
 function viewCounts(M){
@@ -572,7 +575,7 @@ function viewCounts(M){
   let g='<div class="grid"><div></div>'+[0,1,2,3].map(b=>`<div class="h">${b} ball${b===1?'':'s'}</div>`).join('');
   for(let s=0;s<3;s++){g+=`<div class="r">${s} strike${s===1?'':'s'}</div>`;for(let b=0;b<4;b++){const L=P.filter(x=>x.b===b&&x.s===s),w=L.filter(x=>SW(x.c)).length,r=L.length?w/L.length:0;
     const tiles=h==='all'?'':`<div class="tiles">${L.map(x=>`<em class="${SW(x.c)?'sw':''}" title="${esc(x.p.g+' '+x.p.inn)}">${x.c}</em>`).join('')}</div>`;
-    g+=`<div class="cell" style="background:color-mix(in srgb, var(--hit) ${Math.round(r*85)}%, var(--panel))"><span>${b}-${s}</span><b>${L.length?pct(w,L.length)+'%':'—'}</b><small>${w} of ${L.length} swung</small>${tiles}</div>`;}}
+    g+=`<div class="cell" style="background:rgba(242,192,20,${(r*0.85).toFixed(2)})"><span>${b}-${s}</span><b>${L.length?pct(w,L.length)+'%':'—'}</b><small>${w} of ${L.length} swung</small>${tiles}</div>`;}}
   g+='</div>';
   const items=h==='all'?M.plan.mound:[`<b>First pitch:</b> swung at ${fs} of ${fp.length}. ${fp.length&&fs/fp.length<.4?'Throw a strike to start him.':'He’ll swing early; start him off the plate.'}`,`<b>Two strikes:</b> swung at ${ts} of ${two.length}.`,`<b>His approach:</b> ${esc(hitterOf(M,h).read)}`].concat(pinfo(h).notes?[`<b>Coach’s notes:</b> ${esc(pinfo(h).notes)}`]:[]);
   return `<div class="layout"><section class="stage"><h2>${h==='all'?'Swing rate by count':esc(label(h))+' by count'}</h2><p class="note">How often they swung in each count. Darker yellow means more swings.${h==='all'?' Pick a hitter to see every pitch he saw.':' Each tile is one pitch; yellow tiles are swings.'}</p>
@@ -588,7 +591,7 @@ function viewRunning(M){
   const arrows=Object.values(groups).map(gr=>{
     const [x1,y1]=BASE[gr[0].from],[x2,y2]=BASE[gr[0].to]; const cx=(x1+x2)/2,cy=(y1+y2)/2; let nx=cx-mdx,ny=cy-mdy; const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
     const paths=gr.map((s,i)=>{const bend=14+i*7,qx=cx+nx*bend,qy=cy+ny*bend,col=s.res==='SB'?'var(--hit)':'var(--cs)';
-      return `<path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" marker-end="url(#ah-${s.res})" tabindex="0" data-tip="<b>${esc(s.r)}</b><br>${esc(s.g)} ${esc(s.inn)}: ${s.res==='SB'?'stole':'caught stealing'} ${['','','2nd','3rd','home'][s.to]}<br>Count ${s.cnt}, ran on: ${esc(s.pitch.toLowerCase())}<br>${s.outs} out, ${esc(s.bat)} batting"/>`;}).join('');
+      return `<path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" marker-end="url(#ah-${s.res})"/><path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="transparent" stroke-width="18" pointer-events="stroke" tabindex="0" data-tip="<b>${esc(s.r)}</b><br>${esc(s.g)} ${esc(s.inn)}: ${s.res==='SB'?'stole':'caught stealing'} ${['','','2nd','3rd','home'][s.to]}<br>Count ${s.cnt}, ran on: ${esc(s.pitch.toLowerCase())}<br>${s.outs} out, ${esc(s.bat)} batting"/>`;}).join('');
     const zero=gr.filter(s=>s.cnt==='0-0').length, l1=`${gr.length} attempt${gr.length>1?'s':''} to ${['','','2nd','3rd','home'][gr[0].to]}`, l2=zero===gr.length?(gr.length>1?'all on 0-0':'on 0-0'):'counts '+gr.map(s=>s.cnt).join(', ');
     const lx=cx+nx*(26+gr.length*6), ly=cy+ny*(26+gr.length*6);
     return paths+`<text x="${lx}" y="${ly}" text-anchor="${nx>0?'start':'end'}" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="17" fill="var(--chalk)" stroke="var(--grass)" stroke-width="3" paint-order="stroke">${l1}<tspan x="${lx}" dy="17" font-weight="600" font-size="15">${esc(l2)}</tspan></text>`;
@@ -662,13 +665,26 @@ function viewNew(){
   <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn primary" id="build" ${draft.opp&&teams.includes(draft.opp)?'':'disabled'}>${draft.target?'Add game to report':'Build scouting report'}</button><a class="btn" href="#reports">Cancel</a></div></div>`;
 }
 function encodeShare(r){ return btoa(unescape(encodeURIComponent(JSON.stringify({opp:r.opp,games:r.games,roster:rosters[r.id]||null})))); }
+const b64u={enc:b=>{let s='';const a=new Uint8Array(b);for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode.apply(null,a.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');},dec:s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const t=atob(s);const a=new Uint8Array(t.length);for(let i=0;i<t.length;i++)a[i]=t.charCodeAt(i);return a;}};
+async function packReport(r){ const bytes=new TextEncoder().encode(JSON.stringify({opp:r.opp,games:r.games,roster:rosters[r.id]||null}));
+  if (window.CompressionStream){ try{ const buf=await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer(); return 'z'+b64u.enc(buf); }catch(e){} }
+  return 'p'+b64u.enc(bytes); }
+async function unpackReport(s){ const kind=s[0], bytes=b64u.dec(s.slice(1)); let txt;
+  if (kind==='z'){ const buf=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer(); txt=new TextDecoder().decode(buf); }
+  else txt=new TextDecoder().decode(bytes);
+  const o=JSON.parse(txt); if(!o.opp||!Array.isArray(o.games)) throw new Error('bad'); return o; }
+function importReport(o){ const same=reports.find(r=>r.opp===o.opp && r.games.length && o.games.length && r.games[0].text===o.games[0].text); let r;
+  if (same){ same.games=o.games; same.updated=Date.now(); r=same; } else { r={id:'r'+Date.now(),opp:o.opp,games:o.games,updated:Date.now()}; reports.unshift(r); }
+  store.set(STORE,reports); if(o.roster){ rosters[r.id]=o.roster; saveRoster(); } setActive(r.id); return r; }
+let notice='';
 function decodeShare(s){ const o=JSON.parse(decodeURIComponent(escape(atob(s.trim())))); if(!o.opp||!Array.isArray(o.games)) throw new Error('bad'); return o; }
 function viewReports(){
   const cur=activeReport().id;
   const cards=allReports().map(r=>`<article class="report"><h3>${esc(r.opp)}</h3><span class="note">${r.games.length} game${r.games.length>1?'s':''}${r.sample?', sample report':''}${r.updated?', updated '+new Date(r.updated).toLocaleDateString():''}</span>
-    <div class="actions"><button type="button" class="btn primary" data-open="${esc(r.id)}">${r.id===cur?'Open (current)':'Open'}</button><button type="button" class="btn" data-addto="${esc(r.id)}">Add a game</button><button type="button" class="btn" data-share="${esc(r.id)}">Share</button>${r.sample?'':`<button type="button" class="btn" data-del="${esc(r.id)}">Delete</button>`}</div></article>`).join('');
+    <div class="actions"><button type="button" class="btn primary" data-open="${esc(r.id)}">${r.id===cur?'Open (current)':'Open'}</button><button type="button" class="btn" data-addto="${esc(r.id)}">Add a game</button><button type="button" class="btn" data-link="${esc(r.id)}">Send to another device</button><button type="button" class="btn" data-share="${esc(r.id)}">Share code</button>${r.sample?'':`<button type="button" class="btn" data-del="${esc(r.id)}">Delete</button>`}</div></article>`).join('');
   return `<div class="layout" style="grid-template-columns:1fr"><section class="stage"><h2>Your scouting reports</h2><p class="note">Reports are saved in this browser. To give one to another coach, use Share and send them the code.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><a class="btn primary" href="#new">New scouting report</a></div><div class="reports">${cards}</div></section>
+  <section class="card" id="linkbox" hidden><h2>Send to another device</h2><p class="note">Open this link on your iPad, phone or another computer. The report, roster changes and notes load there automatically. Links work on your Dugout Scout website address.</p><textarea id="linktext" readonly style="min-height:80px" aria-label="Report link"></textarea><p style="margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn primary" id="linkshare" hidden>Share link</button><button type="button" class="btn" id="linkcopy">Copy link</button><span id="linkmsg"></span></p></section>
   <section class="card" id="sharebox" hidden><h2>Share code</h2><p class="note">Copy this whole code and send it to another coach. They paste it below on their copy of the site.</p><textarea id="sharecode" readonly style="min-height:110px"></textarea></section>
   <section class="card"><h2>Open a report another coach shared</h2><p class="note">Paste the share code you were sent.</p><textarea id="importcode" style="min-height:90px" aria-label="Share code"></textarea><p style="margin:8px 0 0"><button type="button" class="btn" id="import">Add report</button> <span id="importmsg"></span></p></section></div>`;
 }
@@ -691,6 +707,7 @@ function render(){
   let html='';
   try { html = REPORT_VIEWS[v] ? REPORT_VIEWS[v](getModel()) : v==='new' ? viewNew() : viewReports(); }
   catch(e){ html=`<div class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p>Check that each game was pasted in full, then rebuild it from New report.</p></div>`; }
+  if (notice){ html=`<p class="card" role="status" style="margin:24px 0 0">${notice}</p>`+html; notice=''; }
   app.innerHTML = html + `<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray spots are placed by the fielder who played the ball. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), and fielder numbers (6-3, F8, L3, P1).</footer>`;
   tip.style.display='none'; bindTips(app); wire(v);
 }
@@ -698,6 +715,7 @@ function wire(v){
   app.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{state.game=b.dataset.game;render();});
   app.querySelectorAll('[data-pick]').forEach(s=>s.onchange=()=>{state[s.dataset.pick]=s.value;render();});
   app.querySelectorAll('tr[data-runner]').forEach(t=>{const go=()=>{state.runner=t.dataset.runner;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  app.querySelectorAll('[data-allhitters]').forEach(b=>b.onclick=()=>{state.hitter='all';render();});
   app.querySelectorAll('tr[data-hitter]').forEach(t=>{const go=()=>{state.hitter=t.dataset.hitter;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
   if (v==='roster'){
     app.querySelectorAll('[data-inc]').forEach(c=>c.onchange=()=>{ const R=roster(), n=c.dataset.inc; R.removed=R.removed.filter(x=>x!==n); if(!c.checked) R.removed.push(n); saveRoster(); model=null; render(); });
@@ -736,12 +754,25 @@ function wire(v){
       if (src.sample){ const copy={id:'r'+Date.now(),opp:src.opp,games:src.games.slice(),updated:Date.now()}; reports.unshift(copy); store.set(STORE,reports); draft={games:[{label:'G'+(copy.games.length+1),text:''}],opp:src.opp,target:copy.id}; }
       else draft={games:[{label:'G'+(src.games.length+1),text:''}],opp:src.opp,target:src.id};
       location.hash='#new'; });
+    app.querySelectorAll('[data-link]').forEach(b=>b.onclick=async()=>{ const r=allReports().find(x=>x.id===b.dataset.link); const box=$('#linkbox'), t=$('#linktext'), msg=$('#linkmsg'); box.hidden=false; msg.textContent='Making link…'; msg.className='note';
+      const link=location.origin+location.pathname+'#r='+await packReport(r); t.value=link; msg.textContent='';
+      const sh=$('#linkshare'); if(navigator.share){ sh.hidden=false; sh.onclick=()=>navigator.share({title:'Dugout Scout: '+r.opp,url:link}).catch(()=>{}); }
+      $('#linkcopy').onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(link); ok=true; }catch(e){ t.focus(); t.select(); try{ ok=document.execCommand('copy'); }catch(e2){} } msg.className=ok?'ok':'note'; msg.textContent=ok?'Copied. Send it to yourself by text, email or AirDrop.':'Select the link above and copy it.'; };
+      box.scrollIntoView({behavior:'smooth'}); });
     app.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>{ const r=allReports().find(x=>x.id===b.dataset.share); const box=$('#sharebox'); box.hidden=false; const t=$('#sharecode'); t.value=encodeShare(r); t.focus(); t.select(); try{ navigator.clipboard&&navigator.clipboard.writeText(t.value);}catch(e){} box.scrollIntoView({behavior:'smooth'}); });
     $('#import').onclick=()=>{ const msg=$('#importmsg'); try{ const o=decodeShare($('#importcode').value); const r={id:'r'+Date.now(),opp:o.opp,games:o.games,updated:Date.now()}; reports.unshift(r); store.set(STORE,reports); if(o.roster){ rosters[r.id]=o.roster; saveRoster(); } setActive(r.id); location.hash='#plan'; }catch(e){ msg.className='err'; msg.textContent='That code didn’t work. Copy the whole code and try again.'; } };
   }
 }
-addEventListener('hashchange',()=>{ if(location.hash==='#new' && !draft.target && draft.games.every(g=>!g.text)) draft={games:[{label:'G1',text:''}],opp:null}; render(); });
-render();
+let touchMode=false;
+addEventListener('pointerdown',e=>{ touchMode = e.pointerType!=='mouse'; },true);
+addEventListener('touchstart',()=>{ touchMode=true; },{capture:true,passive:true});
+addEventListener('click',()=>{ tip.style.display='none'; });
+async function boot(){ const h=location.hash;
+  if (h.startsWith('#r=')){ try{ const o=await unpackReport(h.slice(3)); const r=importReport(o); notice=`<span class="ok">Added “${esc(r.opp)}” to this device.</span> It’s saved here now, so you can open it from All reports anytime.`; history.replaceState(null,'',location.pathname+location.search+'#plan'); }
+    catch(e){ notice='<span class="err">That report link didn’t open.</span> Make sure the whole link was copied, then try again.'; history.replaceState(null,'',location.pathname+location.search+'#reports'); } }
+  render(); }
+addEventListener('hashchange',()=>{ if(location.hash.startsWith('#r=')) return boot(); if(location.hash==='#new' && !draft.target && draft.games.every(g=>!g.text)) draft={games:[{label:'G1',text:''}],opp:null}; render(); });
+boot();
 </script>
 </body>
 </html>
