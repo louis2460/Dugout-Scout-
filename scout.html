@@ -107,7 +107,52 @@ svg.field :not([data-tip]){pointer-events:none}
 .choice label{border:1px solid var(--line);padding:8px 12px;background:var(--soft);cursor:pointer;display:flex;gap:8px;align-items:center}
 footer{color:var(--muted);font-size:14px;margin-top:28px}
 .empty{padding:28px;text-align:center;color:var(--muted)}
-@media print{header.board .toplinks,nav.tabs,.filters,.btn{display:none!important}body{background:#fff}}
+@media print{
+  @page{size:letter;margin:0.45in}
+  :root{padding:0!important}
+  body{background:#fff!important;color:#111!important;font-size:12px}
+  body::before,#status,header.board .toplinks,nav.tabs,.filters,.btn,.tip,.print-hide,footer .noprint,#printbar{display:none!important}
+  header.board{background:#fff!important;color:#111!important;border-bottom:2px solid #111}
+  header.board .wrap{padding:0 0 6px}
+  .brand{color:#111!important}
+  h1{font-size:30px;margin:4px 0 0}
+  .sub{color:#333!important}
+  .wrap{max-width:none;padding:0}
+  .layout{grid-template-columns:1fr 1fr!important;gap:14px;margin-top:12px}
+  .stage,.card,.below{border:1px solid #999;background:#fff!important;padding:10px;break-inside:avoid}
+  .plan{background:#fff!important;color:#111!important;border:2px solid #111;padding:10px 12px 2px;break-inside:avoid}
+  .plan h2{color:#111!important;font-size:20px}
+  .plan li b{color:#111!important}
+  .plan .who{color:#444!important}
+  .note,.stats span,.legend{color:#333!important}
+  svg.field,.cell,.tiles em,.legend i,.tag,.bars .fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table{font-size:11px}
+  th,td{padding:4px 6px}
+  .print-page{break-before:page}
+  .print-page.first{break-before:auto}
+  .print-page.first .layout{margin-top:8px}
+  .print-page.first .layout+.layout{margin-top:10px}
+  .plan li{margin:0 0 5px}
+  .plan h2{margin-bottom:2px}
+  .stats b{font-size:20px}
+  .hcards{grid-template-columns:repeat(3,1fr)!important}
+  .hcard{break-inside:avoid}
+}
+.hcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.hcard{border:1px solid var(--line);background:var(--panel);padding:10px}
+.hcard h3{font:600 18px/1.15 "Barlow Condensed",sans-serif;margin:0}
+.hcard .ln{font:700 15px/1.2 "Barlow Condensed",sans-serif;margin:2px 0 4px}
+.hcard p{margin:4px 0 0;font-size:13px}
+
+.gpick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gcount{font-size:13px;color:var(--muted);margin-right:4px}
+.gchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:5px 10px;font-size:14px;font-weight:600;cursor:pointer;user-select:none}
+.gchip input{width:16px;height:16px;margin:0;accent-color:#1d3a26}
+.gchip small{font-weight:400;color:var(--muted)}
+.gchip.on{background:var(--board);color:var(--hit);border-color:var(--board)}
+.gchip.on small{color:var(--board-muted)}
+.btn.sm{padding:5px 10px;font-size:13px}
+#printbar{position:sticky;top:0;z-index:5;background:var(--hit);color:var(--hit-ink);padding:10px 14px;margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -488,11 +533,16 @@ function matchTeam(teams,want){ const w=norm(want); if(!w||!teams.length) return
   const score=x=>{ const tw=words(x); return words(want).filter(a=>tw.some(b=>close(a,b))).length; };
   const ranked=teams.map(x=>({x,s:score(x)})).sort((a,b)=>b.s-a.s);
   return ranked[0].s>=2&&(ranked.length<2||ranked[0].s>ranked[1].s)?ranked[0].x:null; }
+const SELKEY='dugoutscout.gamesoff.v1';
+function offList(t){ const all=store.get(SELKEY,{}); return (all[norm(t.name)]||[]); }
+function setOff(t,list){ const all=store.get(SELKEY,{}); all[norm(t.name)]=list; store.set(SELKEY,all); model=null; }
+function gameKey(g){ return [g.label||'',g.date||'',String(g.text||'').length].join('|'); }
+function selectedIdx(t){ const off=new Set(offList(t)); return t.games.map((g,i)=>off.has(gameKey(g))?-1:i).filter(i=>i>=0); }
 function getModel(){
-  const t=teamObj(); const key=JSON.stringify([t.name,t.games.map(g=>[g.label,g.date,g.text.length]),t.roster]);
+  const t=teamObj(); const sel=selectedIdx(t); const key=JSON.stringify([t.name,t.games.map(g=>[g.label,g.date,g.text.length]),t.roster,sel]);
   if(model&&modelKey===key) return model;
   const labels=gameLabels(t), warn=[], parsed=[];
-  t.games.forEach((g,i)=>{ const p=ENGINE.parseGame(g.text,labels[i]);
+  t.games.forEach((g,i)=>{ if(!sel.includes(i)) return; const p=ENGINE.parseGame(g.text,labels[i]);
     if(!p.ok){ warn.push(`<b>${esc(labels[i])}</b>: ${esc(p.error)}`); return; }
     const m=matchTeam(p.teams,t.name);
     if(!m){ warn.push(`<b>${esc(labels[i])}</b>: couldn’t find “${esc(t.name)}” in this play-by-play. It has ${p.teams.map(esc).join(' and ')}. Rename this team’s tab in the Google Sheet to match GameChanger.`); return; }
@@ -561,8 +611,10 @@ function bindTips(root){
   });
 }
 function gameSeg(M){
-  const opts=[['all','All games']].concat(M.games.map(g=>[g,g]));
-  return `<div class="seg" role="group" aria-label="Games">${opts.map(([v,t])=>`<button type="button" data-game="${esc(v)}" aria-pressed="${state.game===v}">${esc(t)}</button>`).join('')}</div>`;
+  const t=teamObj(); if(!t) return '';
+  const labels=gameLabels(t), sel=selectedIdx(t);
+  const chips=t.games.map((g,i)=>`<label class="gchip ${sel.includes(i)?'on':''}"><input type="checkbox" data-gtoggle="${i}" ${sel.includes(i)?'checked':''}> ${esc(labels[i])}${g.date&&labels[i].indexOf(g.date)<0?` <small>${esc(g.date)}</small>`:''}</label>`).join('');
+  return `<div class="gpick" role="group" aria-label="Games to include"><span class="gcount">Using ${sel.length} of ${t.games.length} game${t.games.length===1?'':'s'}</span>${chips}${t.games.length>1?`<button type="button" class="btn sm" data-gall>All games</button><button type="button" class="btn sm" data-glatest>Latest only</button>`:''}</div>`;
 }
 function pick(key,list,allLabel,labelText){
   return `<label>${labelText} <select data-pick="${key}"><option value="all">${allLabel}</option>${list.map(n=>`<option value="${esc(n)}" ${state[key]===n?'selected':''}>${esc(label(n))}</option>`).join('')}</select></label>`;
@@ -670,12 +722,33 @@ function viewHome(){
   <section class="card"><h2>Adding games</h2><p class="note" style="margin:0">Open the Google Sheet${DATA.sheetUrl?` (<a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">link</a>)`:''} and use <b>Dugout Scout → Add a game</b>. Pick the team (or type a new one) and paste the play-by-play. Each team has its own tab. Coaches see new games the next time they open the site.</p></section></div>`;
 }
 /* ---------- shell ---------- */
-const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster};
+const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
+/* ---------- printable report ---------- */
+function viewPrint(M){
+  const keep=Object.assign({},state); state={game:'all',hitter:'all',runner:'all'};
+  const t=teamObj(), R=roster();
+  const names=hitterNames(M).filter(n=>M.hitters[n]);
+  const cards=names.map(n=>{ const H=M.hitters[n], i=R.info[n]||{}; const list=M.bip.filter(b=>b.h===n);
+    return `<article class="hcard"><h3>${esc(label(n))}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
+      <p class="ln">${esc(H.line)}</p>${list.length?sprayField(list):'<p class="note">No balls in play.</p>'}
+      <p><b>Approach:</b> ${esc(H.read)}</p><p><b>Play him:</b> ${esc(H.shade)}</p>${i.notes?`<p><b>Notes:</b> ${esc(i.notes)}</p>`:''}</article>`; }).join('');
+  const strip=html=>html.replace(/<section class="below"><h2>Plate appearances<\/h2>[\s\S]*?<\/section>/,'');
+  const out=`<div id="printbar"><b>Printable report</b><span>Your print screen opens automatically. Choose <b>Save as PDF</b> for a file, or pick a printer. On iPad: Share → Save to Files.</span><button type="button" class="btn" id="printnow">Print / Save PDF</button><a class="btn" href="#plan">Back to report</a></div>
+  <p class="note" style="margin:10px 0 0">Printed ${esc(new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}))} · ${(()=>{ const sel=selectedIdx(t), L=gameLabels(t); return `${sel.length} game${sel.length===1?'':'s'}${sel.length<t.games.length?' (of '+t.games.length+')':''}: ${sel.map(i=>esc(L[i])).join(', ')}`; })()}</p>
+  <div class="print-page first">${viewPlan(M)}</div>
+  <div class="print-page"><section class="below"><h2>Hitter cards</h2><p class="note">Lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Yellow reached base, white out. Triangle hard hit.</p><div class="hcards">${cards}</div></section></div>
+  <div class="print-page">${strip(viewSpray(M))}</div>
+  <div class="print-page">${viewCounts(M)}</div>
+  <div class="print-page">${viewRunning(M)}</div>
+  <div class="print-page">${viewPitchers(M)}</div>`;
+  state=keep; return out;
+}
+let printedFor='';
 function renderHead(v,t){
   const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
   const labels=t?gameLabels(t):[];
-  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">Dugout Scout</a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" style="min-width:200px;background:#0f1d16;color:var(--board-ink);border-color:#3a4f43"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
-  ${t?`<h1>${esc(t.name)}</h1><p class="sub">Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
+  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">Dugout Scout</a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" style="min-width:200px;background:#0f1d16;color:var(--board-ink);border-color:#3a4f43"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
+  ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
   <div id="status" class="sub" style="margin-top:6px;font-size:14px"></div>
   ${t?`<nav class="tabs" aria-label="Report sections">${tabs.map(([k,x])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${x}</a>`).join('')}</nav>`:'<div style="height:18px"></div>'}`;
   paintStatus();
@@ -691,9 +764,14 @@ function render(){
     catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
   app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
   tip.style.display='none'; bindTips(app); wire(v);
+  if(v==='print'&&t&&t.games.length){ const pb=$('#printnow'); if(pb) pb.onclick=()=>window.print(); const key=t.name; if(printedFor!==key){ printedFor=key; setTimeout(()=>{ try{ window.print(); }catch(e){} },700); } }
+  else printedFor='';
 }
 function wire(v){
-  app.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{state.game=b.dataset.game;render();});
+  app.querySelectorAll('[data-gtoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(); if(!t) return; const g=t.games[+c.dataset.gtoggle]; const k=gameKey(g); let off=offList(t).filter(x=>t.games.some(y=>gameKey(y)===x));
+      if(c.checked) off=off.filter(x=>x!==k); else { if(selectedIdx(t).length<=1){ c.checked=true; return; } off.push(k); } setOff(t,off); render(); });
+  app.querySelectorAll('[data-gall]').forEach(b=>b.onclick=()=>{ const t=teamObj(); setOff(t,[]); render(); });
+  app.querySelectorAll('[data-glatest]').forEach(b=>b.onclick=()=>{ const t=teamObj(); const last=t.games.length-1; setOff(t,t.games.filter((g,i)=>i!==last).map(gameKey)); render(); });
   app.querySelectorAll('[data-pick]').forEach(s=>s.onchange=()=>{state[s.dataset.pick]=s.value;render();});
   app.querySelectorAll('[data-allhitters]').forEach(b=>b.onclick=()=>{state.hitter='all';render();});
   app.querySelectorAll('tr[data-runner]').forEach(t=>{const go=()=>{state.runner=t.dataset.runner;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
