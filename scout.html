@@ -152,6 +152,10 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .gchip.on{background:var(--board);color:var(--hit);border-color:var(--board)}
 .gchip.on small{color:var(--board-muted)}
 .btn.sm{padding:5px 10px;font-size:13px}
+.scard{cursor:pointer;transition:border-color .15s}
+.scard:hover{border-color:var(--board)}
+.nobip{aspect-ratio:6/5;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--muted);font-size:14px}
+@media (min-width:1100px){.sgrid{grid-template-columns:repeat(4,1fr)}}
 details.lineup{background:var(--panel);border:1px solid var(--line);padding:10px 14px}
 details.lineup summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 details.lineup summary::-webkit-details-marker{display:none}
@@ -753,7 +757,18 @@ function viewHome(){
   <section class="card"><h2>Adding games</h2><p class="note" style="margin:0">Open the Google Sheet${DATA.sheetUrl?` (<a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">link</a>)`:''} and use <b>Dugout Scout → Add a game</b>. Pick the team (or type a new one) and paste the play-by-play. Each team has its own tab. Coaches see new games the next time they open the site.</p></section></div>`;
 }
 /* ---------- shell ---------- */
-const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
+const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,sprays:viewSprayGrid,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
+/* ---------- all spray charts at once ---------- */
+function viewSprayGrid(M){
+  const names=hitterNames(M), L=lineupOf(teamObj());
+  const cards=names.map(n=>{ const H=hitterOf(M,n), i=pinfo(n), list=M.bip.filter(b=>b.h===n);
+    const lf=list.filter(b=>b.a<35).length, rt=list.filter(b=>b.a>55).length, md=list.length-lf-rt;
+    return `<article class="hcard scard" data-hitter-open="${esc(n)}" tabindex="0" aria-label="Open ${esc(n)}"><h3>${esc(label(n))}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
+      <p class="ln">${esc(H.line)}</p>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}
+      <p class="note" style="margin:4px 0 0">${list.length} in play${list.length?`: ${lf} left · ${md} middle · ${rt} right`:''}</p></article>`; }).join('');
+  return `<section class="below"><h2>Spray charts</h2><p class="note">${L?'Every hitter in your lineup':'Every hitter'} at once, from the games you’ve selected. Tap a chart to open that hitter. Tap a line or dot to see the play.</p>
+  <div class="filters">${gameSeg(M)}</div>${legend()}<div class="hcards sgrid" style="margin-top:12px">${cards||'<p class="empty">No hitters for this selection.</p>'}</div></section>`;
+}
 /* ---------- printable report ---------- */
 function viewPrint(M){
   const keep=Object.assign({},state); state={game:'all',hitter:'all',runner:'all'};
@@ -777,7 +792,7 @@ function viewPrint(M){
 }
 let printedFor='';
 function renderHead(v,t){
-  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
+  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
   const labels=t?gameLabels(t):[];
   head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">Dugout Scout</a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" style="min-width:200px;background:#0f1d16;color:var(--board-ink);border-color:#3a4f43"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
   ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
@@ -812,6 +827,7 @@ function wire(v){
   app.querySelectorAll('[data-glatest]').forEach(b=>b.onclick=()=>{ const t=teamObj(); const last=t.games.length-1; setOff(t,t.games.filter((g,i)=>i!==last).map(gameKey)); render(); });
   app.querySelectorAll('[data-pick]').forEach(s=>s.onchange=()=>{state[s.dataset.pick]=s.value;render();});
   app.querySelectorAll('[data-allhitters]').forEach(b=>b.onclick=()=>{state.hitter='all';render();});
+  app.querySelectorAll('[data-hitter-open]').forEach(c=>{ const go=()=>{ state.hitter=c.dataset.hitterOpen; location.hash='#spray'; scrollTo({top:0}); }; c.onclick=go; c.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
   app.querySelectorAll('tr[data-runner]').forEach(t=>{const go=()=>{state.runner=t.dataset.runner;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
   app.querySelectorAll('tr[data-hitter]').forEach(t=>{const go=()=>{state.hitter=t.dataset.hitter;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
   const ss=$('#sharesite'); if(ss) ss.onclick=async()=>{ const link=location.origin+location.pathname, msg=$('#copymsg');
