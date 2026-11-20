@@ -9,12 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#e7ece6; --panel:#ffffff; --ink:#15241c; --muted:#56675d; --line:#cdd6ce; --soft:#f1f4f0;
-  --board:#15241c; --board-ink:#f4f7f2; --board-muted:#b9c8bf; --hit:#f2c014; --hit-ink:#2a2100; --cs:#d9472f;
+  --bg:#eef1ea; --panel:#fbfbf7; --ink:#26352d; --muted:#5f6f66; --line:#d8dfd5; --soft:#f2f4ee;
+  --board:#2c4337; --board-ink:#eef3ec; --board-muted:#c3d1c8; --hit:#e3bb3d; --hit-ink:#2d2406; --cs:#c4573f;
+  --plan-bg:#e8efe4; --plan-line:#6a9478; --plan-head:#2c4337;
   --grass:#2e6a3e; --grass2:#357548; --dirt:#b5875b; --chalk:#f4f7f2; color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1813;--panel:#16241d;--ink:#e4ede6;--muted:#9bb0a3;--line:#2a3c33;--soft:#1c2c24;--board:#0a120e;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1813;--panel:#16241d;--ink:#e4ede6;--muted:#9bb0a3;--line:#2a3c33;--soft:#1c2c24;--board:#0a120e;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151d19;--panel:#1c2722;--ink:#d8e2db;--muted:#9aab9f;--line:#2e3c35;--soft:#212d27;--board:#1a2620;--board-muted:#a9bab0;--plan-bg:#202e27;--plan-line:#6e9c7d;--plan-head:#e3bb3d;--chip-on:#2f4a3b;--chip-on-line:#6e9c7d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151d19;--panel:#1c2722;--ink:#d8e2db;--muted:#9aab9f;--line:#2e3c35;--soft:#212d27;--board:#1a2620;--board-muted:#a9bab0;--plan-bg:#202e27;--plan-line:#6e9c7d;--plan-head:#e3bb3d;--chip-on:#2f4a3b;--chip-on-line:#6e9c7d;color-scheme:dark}
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
@@ -55,12 +56,12 @@ svg.field{width:100%;height:auto;display:block}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted);margin-top:10px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:5px}
 .side{display:flex;flex-direction:column;gap:16px}
-.plan{background:var(--board);color:var(--board-ink);padding:18px 18px 8px}
-.plan h2{color:var(--hit)}
-.plan .who{color:var(--board-muted);font-size:14px;margin:0 0 10px}
+.plan{background:var(--plan-bg);color:var(--ink);padding:16px 18px 8px;border-left:4px solid var(--plan-line)}
+.plan h2{color:var(--plan-head)}
+.plan .who{color:var(--muted);font-size:14px;margin:0 0 10px}
 .plan ol{margin:0;padding:0 0 0 20px}
 .plan li{margin:0 0 10px}
-.plan li b{color:#fff}
+.plan li b{color:var(--ink)}
 .card h3{font:600 20px/1.2 "Barlow Condensed",sans-serif;margin:0 0 8px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stats div{background:var(--soft);padding:8px 10px}
@@ -149,9 +150,10 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .gchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:5px 10px;font-size:14px;font-weight:600;cursor:pointer;user-select:none}
 .gchip input{width:16px;height:16px;margin:0;accent-color:#1d3a26}
 .gchip small{font-weight:400;color:var(--muted)}
-.gchip.on{background:var(--board);color:var(--hit);border-color:var(--board)}
+.gchip.on{background:var(--chip-on,var(--board));color:var(--hit);border-color:var(--chip-on-line,var(--board))}
 .gchip.on small{color:var(--board-muted)}
 .btn.sm{padding:5px 10px;font-size:13px}
+.teamswitch option{color:#26352d;background:#fbfbf7}
 .scard{cursor:pointer;transition:border-color .15s}
 .scard:hover{border-color:var(--board)}
 .nobip{aspect-ratio:6/5;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--muted);font-size:14px}
@@ -794,7 +796,7 @@ let printedFor='';
 function renderHead(v,t){
   const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
   const labels=t?gameLabels(t):[];
-  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">Dugout Scout</a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" style="min-width:200px;background:#0f1d16;color:var(--board-ink);border-color:#3a4f43"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
+  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">Dugout Scout</a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
   ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
   <div id="status" class="sub" style="margin-top:6px;font-size:14px"></div>
   ${t?`<nav class="tabs" aria-label="Report sections">${tabs.map(([k,x])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${x}</a>`).join('')}</nav>`:'<div style="height:18px"></div>'}`;
