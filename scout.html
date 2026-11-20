@@ -159,6 +159,8 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .sprayone .mh span{color:var(--muted);font-size:12px}
 .sprayone .mc{margin-top:3px;line-height:1.6}
 .sprayone .mc .call{font-size:12px;padding:0 5px}
+.sprayone .mn{font-size:12px;line-height:1.3;color:var(--ink);margin-top:3px}
+.snote{margin:6px 0 0;font-size:13px;line-height:1.35}
 @media print{
   .sprayone .below{border:0;padding:0}
   .sprayone h2{margin:0 0 2px}
@@ -169,6 +171,8 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
   .sprayone .mcard .nobip{flex:1 1 auto;aspect-ratio:auto}
   .sprayone .mh{font-size:11px}.sprayone .mh span{font-size:10px}
   .sprayone .mc .call{font-size:10px;padding:0 4px;border-width:1px}
+  .sprayone .mn{font-size:9px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:0 0 auto}
+  .sprayone .mc,.sprayone .mh{flex:0 0 auto}
 }
 .call{display:inline-block;font:700 14px/1.3 "Barlow Condensed",sans-serif;letter-spacing:.3px;padding:1px 7px;border:1.5px solid var(--ink);color:var(--ink);background:var(--panel);white-space:nowrap}
 .call.of{border-color:var(--c);color:var(--c)}
@@ -883,7 +887,7 @@ function viewSprayGrid(M){
     const lf=list.filter(b=>b.a<35).length, rt=list.filter(b=>b.a>55).length, md=list.length-lf-rt;
     return `<article class="hcard scard" data-hitter-open="${esc(n)}" tabindex="0" aria-label="Open ${esc(n)}"><h3>${esc(label(n))}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
       <p class="ln">${esc(H.line)}</p>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}
-      <p class="note" style="margin:4px 0 0">${list.length} in play${list.length?`: ${lf} left · ${md} middle · ${rt} right`:''}</p>${M.hitters[n]?`<p style="margin:6px 0 0">${callBadges(alignFor(n,M))}</p>`:''}</article>`; }).join('');
+      <p class="note" style="margin:4px 0 0">${list.length} in play${list.length?`: ${lf} left · ${md} middle · ${rt} right`:''}</p>${M.hitters[n]?`<p style="margin:6px 0 0">${callBadges(alignFor(n,M))}</p>`:''}${(()=>{ const nt=String(i.notes||'').trim()||(M.hitters[n]?H.read:''); return nt?`<p class="snote"><b>${i.notes?'Notes':'Approach'}:</b> ${esc(nt)}</p>`:''; })()}</article>`; }).join('');
   return `<section class="below"><h2>Spray charts</h2><p class="note">${L?'Every hitter in your lineup':'Every hitter'} at once, from the games you’ve selected. Tap a chart to open that hitter. Tap a line or dot to see the play.</p>
   <div class="filters">${gameSeg(M)}</div>${legend()}<div class="hcards sgrid" style="margin-top:12px">${cards||'<p class="empty">No hitters for this selection.</p>'}</div></section>`;
 }
@@ -898,10 +902,11 @@ function viewPrint(M){
       <p><b>Approach:</b> ${esc(H.read)}</p><p><b>Play him:</b> ${esc(H.shade)}</p>${i.notes?`<p><b>Notes:</b> ${esc(i.notes)}</p>`:''}</article>`; }).join('');
   const nH=Math.max(1,names.length);
   // choose the column count that makes each chart as large as possible on one letter page (7.6in x 8.75in usable)
-  let cols=2, best=0; for(let c=2;c<=6;c++){ const r=Math.ceil(nH/c), w=(7.6-(c-1)*0.07)/c-0.12, h=(8.75/r-0.55)*1.2, size=Math.min(w,h); if(size>best+0.01){ best=size; cols=c; } }
+  let cols=2, best=0; for(let c=2;c<=6;c++){ const r=Math.ceil(nH/c), w=(7.6-(c-1)*0.07)/c-0.12, h=(8.75/r-0.95)*1.2, size=Math.min(w,h); if(size>best+0.01){ best=size; cols=c; } }
   const rows=Math.ceil(nH/cols);
   const minis=names.map(n=>{ const H=M.hitters[n], list=M.bip.filter(b=>b.h===n);
-    return `<div class="mcard"><div class="mh"><b>${esc(label(n))}</b> <span>${esc(H.line)}</span></div>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}<div class="mc">${callBadges(alignFor(n,M))}</div></div>`; }).join('');
+    const note=String(pinfo(n).notes||'').trim()||H.read||'';
+    return `<div class="mcard"><div class="mh"><b>${esc(label(n))}</b> <span>${esc(H.line)}</span></div>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}<div class="mc">${callBadges(alignFor(n,M))}</div>${note?`<div class="mn">${esc(note)}</div>`:''}</div>`; }).join('');
   const onePage=`<div class="print-page sprayone" style="--cols:${cols};--rows:${rows}"><section class="below"><h2>Spray charts</h2><p class="note">Solid = line drive · short dashes = ground ball · long dashes = fly/pop · dots = bunt · yellow = reached · white = out · triangle = hard hit</p><div class="mgrid">${minis}</div></section></div>`;
   const strip=html=>html.replace(/<section class="below"><h2>Plate appearances<\/h2>[\s\S]*?<\/section>/,'');
   const out=`<div id="printbar"><b>Printable report</b><span>Your print screen opens automatically. Choose <b>Save as PDF</b> for a file, or pick a printer. On iPad: Share → Save to Files.</span><button type="button" class="btn" id="printnow">Print / Save PDF</button><a class="btn" href="#plan">Back to report</a></div>
