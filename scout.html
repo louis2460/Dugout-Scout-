@@ -153,6 +153,23 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .gchip.on{background:var(--chip-on,var(--board));color:var(--hit);border-color:var(--chip-on-line,var(--board))}
 .gchip.on small{color:var(--board-muted)}
 .btn.sm{padding:5px 10px;font-size:13px}
+.sprayone .mgrid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:8px}
+.sprayone .mcard{border:1px solid var(--line);background:var(--panel);padding:6px;display:flex;flex-direction:column;min-width:0}
+.sprayone .mh{font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sprayone .mh span{color:var(--muted);font-size:12px}
+.sprayone .mc{margin-top:3px;line-height:1.6}
+.sprayone .mc .call{font-size:12px;padding:0 5px}
+@media print{
+  .sprayone .below{border:0;padding:0}
+  .sprayone h2{margin:0 0 2px}
+  .sprayone .note{margin:0 0 6px;font-size:10px}
+  .sprayone .mgrid{gap:5px}
+  .sprayone .mcard{height:calc(8.75in / var(--rows));break-inside:avoid;overflow:hidden;padding:4px;border-color:#999}
+  .sprayone .mcard svg.field{flex:1 1 auto;min-height:0;height:100%;width:100%}
+  .sprayone .mcard .nobip{flex:1 1 auto;aspect-ratio:auto}
+  .sprayone .mh{font-size:11px}.sprayone .mh span{font-size:10px}
+  .sprayone .mc .call{font-size:10px;padding:0 4px;border-width:1px}
+}
 .call{display:inline-block;font:700 14px/1.3 "Barlow Condensed",sans-serif;letter-spacing:.3px;padding:1px 7px;border:1.5px solid var(--ink);color:var(--ink);background:var(--panel);white-space:nowrap}
 .call.of{border-color:var(--c);color:var(--c)}
 .aligntable td{vertical-align:middle}
@@ -877,14 +894,22 @@ function viewPrint(M){
   const names=hitterNames(M).filter(n=>M.hitters[n]);
   const cards=names.map(n=>{ const H=M.hitters[n], i=R.info[n]||{}; const list=M.bip.filter(b=>b.h===n);
     return `<article class="hcard"><h3>${esc(label(n))}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
-      <p class="ln">${esc(H.line)}</p>${list.length?sprayField(list):'<p class="note">No balls in play.</p>'}<p style="margin:4px 0 0">${callBadges(alignFor(n,M))}</p>
+      <p class="ln">${esc(H.line)}</p><p style="margin:4px 0 0">${callBadges(alignFor(n,M))}</p>
       <p><b>Approach:</b> ${esc(H.read)}</p><p><b>Play him:</b> ${esc(H.shade)}</p>${i.notes?`<p><b>Notes:</b> ${esc(i.notes)}</p>`:''}</article>`; }).join('');
+  const nH=Math.max(1,names.length);
+  // choose the column count that makes each chart as large as possible on one letter page (7.6in x 8.75in usable)
+  let cols=2, best=0; for(let c=2;c<=6;c++){ const r=Math.ceil(nH/c), w=(7.6-(c-1)*0.07)/c-0.12, h=(8.75/r-0.55)*1.2, size=Math.min(w,h); if(size>best+0.01){ best=size; cols=c; } }
+  const rows=Math.ceil(nH/cols);
+  const minis=names.map(n=>{ const H=M.hitters[n], list=M.bip.filter(b=>b.h===n);
+    return `<div class="mcard"><div class="mh"><b>${esc(label(n))}</b> <span>${esc(H.line)}</span></div>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}<div class="mc">${callBadges(alignFor(n,M))}</div></div>`; }).join('');
+  const onePage=`<div class="print-page sprayone" style="--cols:${cols};--rows:${rows}"><section class="below"><h2>Spray charts</h2><p class="note">Solid = line drive · short dashes = ground ball · long dashes = fly/pop · dots = bunt · yellow = reached · white = out · triangle = hard hit</p><div class="mgrid">${minis}</div></section></div>`;
   const strip=html=>html.replace(/<section class="below"><h2>Plate appearances<\/h2>[\s\S]*?<\/section>/,'');
   const out=`<div id="printbar"><b>Printable report</b><span>Your print screen opens automatically. Choose <b>Save as PDF</b> for a file, or pick a printer. On iPad: Share → Save to Files.</span><button type="button" class="btn" id="printnow">Print / Save PDF</button><a class="btn" href="#plan">Back to report</a></div>
   <p class="note" style="margin:10px 0 0">Printed ${esc(new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}))} · ${(()=>{ const sel=selectedIdx(t), L=gameLabels(t); return `${sel.length} game${sel.length===1?'':'s'}${sel.length<t.games.length?' (of '+t.games.length+')':''}: ${sel.map(i=>esc(L[i])).join(', ')}`; })()}</p>
   ${lineupOf(t)?`<p class="note" style="margin:2px 0 0">Lineup: ${hitterNames(M).map(n=>esc(label(n))).join(', ')}</p>`:''}
   <div class="print-page first">${viewPlan(M)}</div>
-  <div class="print-page"><section class="below"><h2>Hitter cards</h2><p class="note">Lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Yellow reached base, white out. Triangle hard hit.</p><div class="hcards">${cards}</div></section></div>
+  ${onePage}
+  <div class="print-page"><section class="below"><h2>Hitter cards</h2><p class="note">Approach, where to play him, alignment calls and notes for each hitter. Charts are on the Spray charts page.</p><div class="hcards">${cards}</div></section></div>
   <div class="print-page">${viewAlign(M)}</div>
   <div class="print-page">${strip(viewSpray(M))}</div>
   <div class="print-page">${viewCounts(M)}</div>
