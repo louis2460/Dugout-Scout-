@@ -161,6 +161,14 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .sprayone .mc .call{font-size:12px;padding:0 5px}
 .sprayone .mn{font-size:12px;line-height:1.3;color:var(--ink);margin-top:3px}
 .snote{margin:6px 0 0;font-size:13px;line-height:1.35}
+.custgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.custgrid label,.custgrid .lbl{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
+.custgrid input[type=text],.custgrid input[type=password]{min-width:0;width:100%}
+.colorrow{display:flex;gap:8px;align-items:center}
+.colorrow input[type=color]{width:52px;height:38px;padding:2px;border:1px solid var(--line);background:var(--soft);cursor:pointer}
+.colorrow input[type=text]{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace}
+.logobox{height:110px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed var(--line);padding:8px}
+.logobox img{max-height:94px;max-width:100%}
 .avgb{display:inline-block;font:700 15px/1.25 "Barlow Condensed",sans-serif;background:var(--board);color:var(--hit);padding:0 7px;margin-left:6px;vertical-align:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 h2 .avgb{font-size:20px;vertical-align:4px}
 .mh .avgb{font-size:12px;padding:0 5px;margin-left:4px;vertical-align:0}
@@ -656,7 +664,7 @@ async function load(){
   if(!/^https:/.test(API)){ loadState={busy:false,err:'setup',fresh:false}; render(); return; }
   loadState={busy:true,err:'',fresh:false}; paintStatus();
   try{ const res=await fetch(API+(API.indexOf('?')>=0?'&':'?')+'t='+Date.now()); const j=await res.json(); if(!j.ok) throw new Error(j.error||'error');
-    DATA={fetched:Date.now(),teams:j.teams||[],ours:j.ours||[],sheetUrl:j.sheetUrl||''}; store.set(CACHE,DATA); model=null; loadState={busy:false,err:'',fresh:true}; }
+    DATA={fetched:Date.now(),teams:j.teams||[],ours:j.ours||[],brand:j.brand||null,sheetUrl:j.sheetUrl||''}; store.set(CACHE,DATA); model=null; loadState={busy:false,err:'',fresh:true}; }
   catch(e){ loadState={busy:false,err:DATA?'offline':'nodata',fresh:false}; }
   render();
 }
@@ -667,6 +675,44 @@ function statusText(){
   if(loadState.err==='offline') return `<span style="color:#ffd27a">No connection. Showing the copy from ${esc(when(DATA.fetched))}.</span> <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Try again</button>`;
   if(loadState.err==='nodata') return `<span style="color:#ffb4a6">Couldn’t reach the Google Sheet.</span> <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Try again</button>`;
   return DATA?`Up to date as of ${esc(when(DATA.fetched))} <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Refresh</button>`:'';
+}
+/* ---------- branding from the sheet (_Settings): name, colors, logo ---------- */
+const HEXRE=/^#[0-9a-f]{6}$/i;
+const h2r=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const r2h=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const mixc=(a,b,t)=>{ const A=h2r(a),B=h2r(b); return r2h(A.map((v,i)=>v*(1-t)+B[i]*t)); };   // t = amount of b
+const lum=h=>{ const c=h2r(h).map(v=>{ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+const contrast=(a,b)=>{ const x=lum(a),y=lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+function brandCSS(primary,accent){
+  if(!HEXRE.test(primary||'')) return '';
+  let board=primary; for(let i=0;i<12&&contrast(board,'#ffffff')<5;i++) board=mixc(board,'#000000',.12);
+  const soft=HEXRE.test(accent||'')?accent:mixc(primary,'#ffffff',.55);
+  const dBoard=mixc(primary,'#0b0c0e',.6), dLine=mixc(primary,'#ffffff',.35);
+  const L=`--bg:${mixc(primary,'#f4f5f6',.93)};--panel:${mixc(primary,'#ffffff',.985)};--ink:${mixc(primary,'#1c1e22',.88)};--muted:${mixc(primary,'#5f6368',.85)};--line:${mixc(primary,'#d9dbde',.86)};--soft:${mixc(primary,'#f3f4f5',.93)};--board:${board};--board-ink:#ffffff;--board-muted:${mixc(board,'#ffffff',.75)};--plan-bg:${mixc(primary,'#ffffff',.9)};--plan-line:${board};--plan-head:${board};--chip-on:${board};--chip-on-line:${board};--dc:${board};--dc-soft:${soft}`;
+  const D=`--bg:${mixc(primary,'#141518',.92)};--panel:${mixc(primary,'#1c1d20',.9)};--ink:#dcdee2;--muted:#a3a6ab;--line:${mixc(primary,'#303236',.85)};--soft:${mixc(primary,'#212226',.9)};--board:${dBoard};--board-muted:${mixc(dBoard,'#ffffff',.65)};--plan-bg:${mixc(primary,'#1f2023',.85)};--plan-line:${dLine};--plan-head:${mixc(primary,'#ffffff',.6)};--chip-on:${mixc(primary,'#000000',.35)};--chip-on-line:${dLine};--dc:${mixc(primary,'#000000',.25)}`;
+  return `:root{${L}} @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}} :root[data-theme="dark"]{${D}}
+.brand{color:#fff;display:inline-flex;align-items:center;gap:10px}
+nav.tabs a[aria-current="page"]{border-top-color:var(--dc-soft)}
+.btn.primary{background:var(--dc);color:#fff;border-color:var(--dc)}
+.seg button[aria-pressed="true"]{color:#fff}
+.gchip.on{color:#fff}
+.gchip input{accent-color:${board}}
+.avgb{background:var(--dc);color:#fff}
+#printbar{background:var(--dc);color:#fff}`;
+}
+let brandPreview=null;   // unsaved changes on the Customize screen
+function activeBrand(){ return brandPreview||(DATA&&DATA.brand)||{}; }
+function brandLogo(){ const b=activeBrand(); return b.logo===''&&brandPreview?'':(b.logo||LOGO_SRC); }
+function brandName(){ return (activeBrand().teamName||'').trim()||'Dugout Scout'; }
+let lastIconFor='';
+function applyBrand(){
+  const b=activeBrand(); let el=document.getElementById('brandtheme');
+  if(!el){ el=document.createElement('style'); el.id='brandtheme'; document.head.appendChild(el); }
+  el.textContent=brandCSS(b.primary,b.accent);
+  const meta=document.querySelector('meta[name="theme-color"]'); if(meta&&HEXRE.test(b.primary||'')) meta.content=b.primary;
+  const logo=brandLogo();
+  if(logo&&logo!==lastIconFor&&b.logo){ lastIconFor=logo; const img=new Image(); img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=c.height=180; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,180,180); const s=Math.min(152/img.width,152/img.height); x.drawImage(img,(180-img.width*s)/2,(180-img.height*s)/2,img.width*s,img.height*s); const url=c.toDataURL('image/png');
+      document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(l=>l.href=url); }catch(e){} }; img.src=logo; }
 }
 function paintStatus(){ const el=document.getElementById('status'); if(el){ el.innerHTML=statusText(); const b=document.getElementById('reload'); if(b) b.onclick=()=>load(); } const sw=document.getElementById('teamswitch'); if(sw) sw.onchange=()=>{ if(sw.value) location.href=teamLink(sw.value)+(location.hash&&teamObj()?location.hash:''); }; }
 
@@ -831,7 +877,7 @@ function viewHome(){
   const cards=DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<article class="report"><h3>${esc(t.name)}</h3><span class="note">${t.games.length} game${t.games.length===1?'':'s'}${t.games.length?': '+t.games.map(g=>esc(g.label||'')+(g.date?' ('+esc(g.date)+')':'')).join(', '):''}</span>
     <div class="actions"><a class="btn primary" href="${esc(teamLink(t.name))}">Open report</a></div></article>`).join('');
   return `${want}<div class="layout" style="grid-template-columns:1fr"><section class="stage"><h2>Scouting reports</h2><p class="note">Every team tab in your Google Sheet. Pick one to open its report. New games and new teams show up here automatically.</p>
-  <p style="margin:0 0 14px"><button type="button" class="btn" id="sharesite">Share Dugout Scout with coaches</button></p>
+  <p style="margin:0 0 14px"><button type="button" class="btn" id="sharesite">Share Dugout Scout with coaches</button> <a class="btn" href="#customize">Customize logo &amp; colors</a></p>
   <div class="reports">${cards||'<p class="empty">No teams yet. In the Google Sheet, use Dugout Scout → New team or Add a game.</p>'}</div><p id="copymsg" class="note" style="margin:10px 0 0"></p></section>
   <section class="card"><h2>Adding games</h2><p class="note" style="margin:0">Open the Google Sheet${DATA.sheetUrl?` (<a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">link</a>)`:''} and use <b>Dugout Scout → Add a game</b>. Pick the team (or type a new one) and paste the play-by-play. Each team has its own tab. Coaches see new games the next time they open the site.</p></section></div>`;
 }
@@ -929,6 +975,58 @@ function viewAlign(M){
     <li>Late, protecting a lead: <b>CIRCLE</b> (no 2B’s).</li>
     <li>Bunt coverage: runner on 1st, Play 1 or 2; runner on 2nd, Plays 3–7.</li></ul></section></div>`;
 }
+/* ---------- Customize: logo, colors, team name ---------- */
+let custLogo=null;   // undefined = keep, '' = remove, data URL = new
+function viewCustomize(){
+  if(loadState.err==='setup') return `<section class="card" style="margin-top:24px"><h2>Customize</h2><p>Connect this page to a Google Sheet first.</p></section>`;
+  const b=activeBrand(), saved=(DATA&&DATA.brand)||{};
+  const pc=HEXRE.test(b.primary||'')?b.primary:'#2c4337', ac=HEXRE.test(b.accent||'')?b.accent:'#e3bb3d';
+  const logo=custLogo===''?'':(custLogo||brandLogo());
+  return `<div class="layout"><section class="stage"><h2>Customize logo &amp; colors</h2>
+  <p class="note">Changes preview right away on this screen. Tap <b>Save for everyone</b> to put them on every coach’s screen. Saving needs the <b>Edit PIN</b> from the <b>_Settings</b> tab of the Google Sheet.</p>
+  <div class="custgrid">
+    <label>Team name<input type="text" id="cu-name" maxlength="60" value="${esc(b.teamName||'')}" placeholder="Dugout Scout"></label>
+    <label>Main color<span class="colorrow"><input type="color" id="cu-primary" value="${pc}"><input type="text" id="cu-primary-t" value="${HEXRE.test(b.primary||'')?b.primary:''}" placeholder="default" maxlength="7"></span></label>
+    <label>Accent color <small>(optional)</small><span class="colorrow"><input type="color" id="cu-accent" value="${ac}"><input type="text" id="cu-accent-t" value="${HEXRE.test(b.accent||'')?b.accent:''}" placeholder="automatic" maxlength="7"></span></label>
+    <div><span class="lbl">Logo</span><div class="logobox">${logo?`<img src="${esc(logo)}" alt="Logo preview">`:'<span class="note" style="margin:0">No logo</span>'}</div>
+      <p style="margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap"><label class="btn" style="cursor:pointer">Choose image<input type="file" id="cu-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>${logo?'<button type="button" class="btn" id="cu-nologo">Remove logo</button>':''}</p>
+      <p class="note" style="margin:6px 0 0">PNG with a see-through background looks best. It’s resized automatically.</p></div>
+    <label>Edit PIN<input type="password" id="cu-pin" autocomplete="off" placeholder="From the _Settings tab"></label>
+  </div>
+  <p style="margin:16px 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn primary" id="cu-save">Save for everyone</button><button type="button" class="btn" id="cu-reset">Reset to default look</button><a class="btn" href="${esc(location.pathname)}" id="cu-cancel">Cancel</a><span id="cu-msg"></span></p>
+  ${saved&&saved.canEdit===false?'<p class="note" style="border-left:3px solid var(--cs);padding-left:8px;margin-top:12px"><b>No Edit PIN is set yet.</b> Open the Google Sheet, go to the <b>_Settings</b> tab, and type a PIN next to Edit PIN. Then come back here and save.</p>':''}
+  </section>
+  <section class="card"><h3>Good to know</h3><ul style="margin:0;padding-left:18px;font-size:15px">
+    <li>The site builds every shade from your main color, including dark mode. Very light colors are darkened in the header so white text stays readable.</li>
+    <li>Spray chart, field and alignment colors never change, so the charts always mean the same thing.</li>
+    <li>You can also change these in the Google Sheet’s <b>_Settings</b> tab. The logo can be a Google Drive link.</li>
+    <li>Coaches who added the site to their home screen should re-add it to get the new icon.</li></ul></section></div>`;
+}
+function wireCustomize(){
+  const val=id=>document.getElementById(id);
+  const cur=()=>({ teamName:val('cu-name').value.trim(), primary:HEXRE.test(val('cu-primary-t').value.trim())?val('cu-primary-t').value.trim():'', accent:HEXRE.test(val('cu-accent-t').value.trim())?val('cu-accent-t').value.trim():'', logo: custLogo===undefined||custLogo===null?((DATA&&DATA.brand&&DATA.brand.logo)||''):custLogo });
+  const preview=()=>{ brandPreview=cur(); applyBrand(); const nm=document.querySelector('.brand span'); if(nm) nm.textContent=brandName(); const im=document.querySelector('.brand img'); const lg=brandLogo(); if(im&&lg) im.src=lg; };
+  val('cu-name').oninput=preview;
+  [['cu-primary','cu-primary-t'],['cu-accent','cu-accent-t']].forEach(([c,t])=>{
+    val(c).oninput=()=>{ val(t).value=val(c).value; preview(); };
+    val(t).oninput=()=>{ const v=val(t).value.trim(); if(HEXRE.test(v)) val(c).value=v; preview(); };
+  });
+  val('cu-file').onchange=()=>{ const f=val('cu-file').files[0]; if(!f) return; const msg=val('cu-msg');
+    const rd=new FileReader(); rd.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=360, s=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height); custLogo=c.toDataURL('image/png'); brandPreview=Object.assign(cur(),{logo:custLogo}); render(); }; img.onerror=()=>{ msg.className='err'; msg.textContent='That file isn’t an image the browser can read.'; }; img.src=rd.result; }; rd.readAsDataURL(f); };
+  const nl=val('cu-nologo'); if(nl) nl.onclick=()=>{ custLogo=''; brandPreview=Object.assign(cur(),{logo:''}); render(); };
+  val('cu-reset').onclick=()=>{ val('cu-name').value=''; val('cu-primary-t').value=''; val('cu-accent-t').value=''; custLogo=''; brandPreview={teamName:'',primary:'',accent:'',logo:''}; render(); const m=val('cu-msg'); m.className='note'; m.textContent='Default look shown. Tap Save for everyone to keep it.'; };
+  val('cu-cancel').onclick=()=>{ brandPreview=null; custLogo=null; };
+  val('cu-save').onclick=async()=>{ const msg=val('cu-msg'), pin=val('cu-pin').value.trim();
+    if(!pin){ msg.className='err'; msg.textContent='Enter the Edit PIN first.'; return; }
+    const c=cur(); const body={action:'saveBrand',pin,teamName:c.teamName,primary:c.primary,accent:c.accent};
+    if(custLogo==='') body.logo=''; else if(custLogo&&custLogo.indexOf('data:image/')===0) body.logo=custLogo;
+    msg.className='note'; msg.textContent='Saving…'; val('cu-save').disabled=true;
+    try{ const res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}); const j=await res.json();
+      if(!j.ok) throw new Error(j.error||'Could not save.');
+      DATA.brand=j.brand; store.set(CACHE,DATA); brandPreview=null; custLogo=null; msg.className='ok'; msg.textContent='Saved. Every coach will see it the next time they open the site.'; applyBrand(); renderHead('plan',null); }
+    catch(e){ msg.className='err'; msg.textContent=(e.message||'Could not save.')+(/PIN|_Settings/.test(e.message||'')?'':' If this keeps happening, make sure the newest Apps Script is deployed.'); }
+    finally{ val('cu-save').disabled=false; } };
+}
 const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,sprays:viewSprayGrid,align:viewAlign,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
 /* ---------- all spray charts at once ---------- */
 function viewSprayGrid(M){
@@ -977,23 +1075,27 @@ let printedFor='';
 function renderHead(v,t){
   const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['align','Alignment'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
   const labels=t?gameLabels(t):[];
-  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">${LOGO_SRC?`<img class="brandlogo" src="${LOGO_SRC}" alt="DC">`:''}<span>Dugout Scout</span></a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
+  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">${brandLogo()?`<img class="brandlogo" src="${esc(brandLogo())}" alt="">`:''}<span>${esc(brandName())}</span></a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
   ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
   <div id="status" class="sub" style="margin-top:6px;font-size:14px"></div>
   ${t?`<nav class="tabs" aria-label="Report sections">${tabs.map(([k,x])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${x}</a>`).join('')}</nav>`:'<div style="height:18px"></div>'}`;
   paintStatus();
 }
 function render(){
-  let v=(location.hash||'').slice(1); if(!REPORT_VIEWS[v]) v='plan';
-  const t=teamObj(); renderHead(v,t);
+  const rawv=(location.hash||'').slice(1);
+  let v=rawv; if(!REPORT_VIEWS[v]) v='plan';
+  applyBrand();
+  const t=rawv==='customize'?null:teamObj(); renderHead(v,t);
   let html='';
-  if(!t) html=viewHome();
+  if(rawv==='customize') html=viewCustomize();
+  else if(!t) html=viewHome();
   else if(!t.games.length) html=`<section class="card" style="margin-top:24px"><h2>No games yet</h2><p>Add a game for ${esc(t.name)} in the Google Sheet, then open this link again.</p></section>`;
   else { try{ const M=getModel(); if(state.game!=='all'&&!M.games.includes(state.game)) state.game='all';
       html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+(v==='roster'?'':`<div style="margin-top:16px">${lineupBar()}</div>`)+REPORT_VIEWS[v](M); }
     catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
   app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
   tip.style.display='none'; bindTips(app); wire(v);
+  if(rawv==='customize'&&document.getElementById('cu-save')) wireCustomize();
   const lb=app.querySelector('details.lineup'); if(lb) lb.ontoggle=()=>{ lineupOpen=lb.open; const e=lb.querySelector('.ledit'); if(e) e.textContent=lb.open?'Done':'Choose players'; };
   app.querySelectorAll('[data-ltoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(), pool=lineupPool(); let L=lineupOf(t)||pool.slice(); const n=c.dataset.ltoggle;
     if(c.checked){ if(!L.includes(n)) L.push(n); } else { if(L.filter(x=>pool.includes(x)).length<=1){ c.checked=true; return; } L=L.filter(x=>x!==n); }
