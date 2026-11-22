@@ -30,6 +30,7 @@ header.board .wrap{padding-top:16px;padding-bottom:0}
 .btn{font:600 15px "Source Sans 3",sans-serif;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block}
 .btn.primary{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
 .btn.ghost{background:transparent;color:var(--board-ink);border-color:#3a4f43}
+header.board .toplinks a[aria-current="page"]{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.55)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 h1{font:700 clamp(34px,6vw,58px)/0.95 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;margin:18px 0 0;letter-spacing:.5px}
 .sub{color:var(--board-muted);font-size:15px;margin:6px 0 0}
@@ -877,7 +878,7 @@ function viewHome(){
   const cards=DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<article class="report"><h3>${esc(t.name)}</h3><span class="note">${t.games.length} game${t.games.length===1?'':'s'}${t.games.length?': '+t.games.map(g=>esc(g.label||'')+(g.date?' ('+esc(g.date)+')':'')).join(', '):''}</span>
     <div class="actions"><a class="btn primary" href="${esc(teamLink(t.name))}">Open report</a></div></article>`).join('');
   return `${want}<div class="layout" style="grid-template-columns:1fr"><section class="stage"><h2>Scouting reports</h2><p class="note">Every team tab in your Google Sheet. Pick one to open its report. New games and new teams show up here automatically.</p>
-  <p style="margin:0 0 14px"><button type="button" class="btn" id="sharesite">Share Dugout Scout with coaches</button> <a class="btn" href="#customize">Customize logo &amp; colors</a></p>
+  <p style="margin:0 0 14px"><button type="button" class="btn" id="sharesite">Share Dugout Scout with coaches</button></p>
   <div class="reports">${cards||'<p class="empty">No teams yet. In the Google Sheet, use Dugout Scout → New team or Add a game.</p>'}</div><p id="copymsg" class="note" style="margin:10px 0 0"></p></section>
   <section class="card"><h2>Adding games</h2><p class="note" style="margin:0">Open the Google Sheet${DATA.sheetUrl?` (<a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">link</a>)`:''} and use <b>Dugout Scout → Add a game</b>. Pick the team (or type a new one) and paste the play-by-play. Each team has its own tab. Coaches see new games the next time they open the site.</p></section></div>`;
 }
@@ -977,12 +978,13 @@ function viewAlign(M){
 }
 /* ---------- Customize: logo, colors, team name ---------- */
 let custLogo=null;   // undefined = keep, '' = remove, data URL = new
+function isSettingsView(){ const h=(location.hash||'').slice(1); return h==='settings'||h==='customize'; }
 function viewCustomize(){
   if(loadState.err==='setup') return `<section class="card" style="margin-top:24px"><h2>Customize</h2><p>Connect this page to a Google Sheet first.</p></section>`;
   const b=activeBrand(), saved=(DATA&&DATA.brand)||{};
   const pc=HEXRE.test(b.primary||'')?b.primary:'#2c4337', ac=HEXRE.test(b.accent||'')?b.accent:'#e3bb3d';
   const logo=custLogo===''?'':(custLogo||brandLogo());
-  return `<div class="layout"><section class="stage"><h2>Customize logo &amp; colors</h2>
+  return `<div class="layout"><section class="stage"><h2>Logo &amp; colors</h2>
   <p class="note">Changes preview right away on this screen. Tap <b>Save for everyone</b> to put them on every coach’s screen. Saving needs the <b>Edit PIN</b> from the <b>_Settings</b> tab of the Google Sheet.</p>
   <div class="custgrid">
     <label>Team name<input type="text" id="cu-name" maxlength="60" value="${esc(b.teamName||'')}" placeholder="Dugout Scout"></label>
@@ -1075,8 +1077,8 @@ let printedFor='';
 function renderHead(v,t){
   const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['align','Alignment'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
   const labels=t?gameLabels(t):[];
-  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">${brandLogo()?`<img class="brandlogo" src="${esc(brandLogo())}" alt="">`:''}<span>${esc(brandName())}</span></a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a></div></div>
-  ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`}
+  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">${brandLogo()?`<img class="brandlogo" src="${esc(brandLogo())}" alt="">`:''}<span>${esc(brandName())}</span></a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a><a class="btn ghost" href="#settings"${isSettingsView()?' aria-current="page"':''}>Settings</a></div></div>
+  ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:(isSettingsView()?`<h1>Settings</h1><p class="sub">Logo, colors and team name for this site.</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`)}
   <div id="status" class="sub" style="margin-top:6px;font-size:14px"></div>
   ${t?`<nav class="tabs" aria-label="Report sections">${tabs.map(([k,x])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${x}</a>`).join('')}</nav>`:'<div style="height:18px"></div>'}`;
   paintStatus();
@@ -1085,9 +1087,9 @@ function render(){
   const rawv=(location.hash||'').slice(1);
   let v=rawv; if(!REPORT_VIEWS[v]) v='plan';
   applyBrand();
-  const t=rawv==='customize'?null:teamObj(); renderHead(v,t);
+  const t=isSettingsView()?null:teamObj(); renderHead(v,t);
   let html='';
-  if(rawv==='customize') html=viewCustomize();
+  if(isSettingsView()) html=viewCustomize();
   else if(!t) html=viewHome();
   else if(!t.games.length) html=`<section class="card" style="margin-top:24px"><h2>No games yet</h2><p>Add a game for ${esc(t.name)} in the Google Sheet, then open this link again.</p></section>`;
   else { try{ const M=getModel(); if(state.game!=='all'&&!M.games.includes(state.game)) state.game='all';
@@ -1095,7 +1097,7 @@ function render(){
     catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
   app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
   tip.style.display='none'; bindTips(app); wire(v);
-  if(rawv==='customize'&&document.getElementById('cu-save')) wireCustomize();
+  if(isSettingsView()&&document.getElementById('cu-save')) wireCustomize();
   const lb=app.querySelector('details.lineup'); if(lb) lb.ontoggle=()=>{ lineupOpen=lb.open; const e=lb.querySelector('.ledit'); if(e) e.textContent=lb.open?'Done':'Choose players'; };
   app.querySelectorAll('[data-ltoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(), pool=lineupPool(); let L=lineupOf(t)||pool.slice(); const n=c.dataset.ltoggle;
     if(c.checked){ if(!L.includes(n)) L.push(n); } else { if(L.filter(x=>pool.includes(x)).length<=1){ c.checked=true; return; } L=L.filter(x=>x!==n); }
