@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dugout Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1ea; --panel:#fbfbf7; --ink:#26352d; --muted:#5f6f66; --line:#d8dfd5; --soft:#f2f4ee;
+  --board:#2c4337; --board-ink:#eef3ec; --board-muted:#c3d1c8; --hit:#e3bb3d; --hit-ink:#2d2406; --cs:#c4573f;
+  --plan-bg:#e8efe4; --plan-line:#6a9478; --plan-head:#2c4337;
+  --grass:#2e6a3e; --grass2:#357548; --dirt:#b5875b; --chalk:#f4f7f2; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151d19;--panel:#1c2722;--ink:#d8e2db;--muted:#9aab9f;--line:#2e3c35;--soft:#212d27;--board:#1a2620;--board-muted:#a9bab0;--plan-bg:#202e27;--plan-line:#6e9c7d;--plan-head:#e3bb3d;--chip-on:#2f4a3b;--chip-on-line:#6e9c7d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151d19;--panel:#1c2722;--ink:#d8e2db;--muted:#9aab9f;--line:#2e3c35;--soft:#212d27;--board:#1a2620;--board-muted:#a9bab0;--plan-bg:#202e27;--plan-line:#6e9c7d;--plan-head:#e3bb3d;--chip-on:#2f4a3b;--chip-on-line:#6e9c7d;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--board)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 48px}
+header.board{background:var(--board);color:var(--board-ink)}
+header.board .wrap{padding-top:16px;padding-bottom:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font:700 20px/1 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;color:var(--hit);text-decoration:none;letter-spacing:.3px}
+.toplinks{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:600 15px "Source Sans 3",sans-serif;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
+.btn.ghost{background:transparent;color:var(--board-ink);border-color:#3a4f43}
+header.board .toplinks a[aria-current="page"]{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.55)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+h1{font:700 clamp(34px,6vw,58px)/0.95 "Barlow Condensed",Impact,"Arial Narrow",sans-serif;margin:18px 0 0;letter-spacing:.5px}
+.sub{color:var(--board-muted);font-size:15px;margin:6px 0 0}
+nav.tabs{display:flex;gap:2px;margin-top:18px;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{font:600 19px/1 "Barlow Condensed",sans-serif;color:#c9d6ce;text-decoration:none;padding:12px 16px 13px;white-space:nowrap;border-top:3px solid transparent}
+nav.tabs a:hover{color:#fff}
+nav.tabs a[aria-current="page"]{background:var(--bg);color:var(--ink);border-top-color:var(--hit)}
+a:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--hit);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;margin-top:24px}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.stage,.card,.below{background:var(--panel);border:1px solid var(--line);padding:16px}
+.below{margin-top:24px}
+.stage h2,.side h2,.below h2,.card h2{font:600 26px/1.1 "Barlow Condensed",sans-serif;margin:0 0 4px}
+.note{color:var(--muted);font-size:14px;margin:0 0 10px}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 12px}
+.filters label{font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
+select,input[type=text]{font:inherit;font-size:15px;color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:6px 8px;min-width:170px}
+textarea{width:100%;min-height:180px;font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);background:var(--soft);border:1px solid var(--line);padding:10px;resize:vertical}
+.seg{display:inline-flex;border:1px solid var(--line);flex-wrap:wrap}
+.seg button{font:600 15px "Source Sans 3",sans-serif;background:var(--soft);color:var(--ink);border:0;padding:6px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--board);color:var(--hit)}
+svg.field{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:5px}
+.side{display:flex;flex-direction:column;gap:16px}
+.plan{background:var(--plan-bg);color:var(--ink);padding:16px 18px 8px;border-left:4px solid var(--plan-line)}
+.plan h2{color:var(--plan-head)}
+.plan .who{color:var(--muted);font-size:14px;margin:0 0 10px}
+.plan ol{margin:0;padding:0 0 0 20px}
+.plan li{margin:0 0 10px}
+.plan li b{color:var(--ink)}
+.card h3{font:600 20px/1.2 "Barlow Condensed",sans-serif;margin:0 0 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--soft);padding:8px 10px}
+.stats b{display:block;font:700 26px/1 "Barlow Condensed",sans-serif}
+.stats span{font-size:13px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);background:var(--soft);white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font:700 15px "Barlow Condensed",sans-serif;padding:1px 7px;background:var(--soft);border:1px solid var(--line)}
+.tag.on{background:var(--hit);color:var(--hit-ink);border-color:var(--hit)}
+.tag.sm{font-size:12px;padding:0 4px}
+tr.pick{cursor:pointer}
+tr.pick:hover td{background:var(--soft)}
+.tip{position:absolute;pointer-events:none;background:var(--board);color:var(--board-ink);padding:6px 10px;font-size:14px;max-width:260px;z-index:20;display:none;border-left:3px solid var(--hit)}
+[data-tip]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+svg.field :not([data-tip]){pointer-events:none}
+.grid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px}
+.grid .h{font-size:13px;color:var(--muted);text-align:center;align-self:end}
+.grid .r{font-size:13px;color:var(--muted);align-self:center;padding-right:4px}
+.cell{padding:10px 6px;text-align:center;border:1px solid var(--line)}
+.cell b{display:block;font:700 28px/1 "Barlow Condensed",sans-serif}
+.cell span,.cell small{font-size:13px;color:var(--muted)}
+.cell small{display:block;font-size:12px;margin-top:4px}
+.tiles{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px}
+.tiles em{font:700 12px/18px "Barlow Condensed",sans-serif;font-style:normal;width:18px;height:18px;text-align:center;border:1px solid var(--line);color:var(--muted)}
+.tiles em.sw{background:var(--hit);border-color:var(--hit);color:var(--hit-ink)}
+.bars div{display:grid;grid-template-columns:150px 1fr 60px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bars .track{background:var(--soft);height:18px;position:relative}
+.bars .fill{position:absolute;inset:0 auto 0 0;background:var(--cs)}
+.bars .fill.ok{background:var(--grass2)}
+.steps{display:grid;gap:16px;margin-top:24px}
+.game{border:1px solid var(--line);background:var(--panel);padding:14px}
+.game header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.game header input{min-width:240px}
+.ok{color:var(--grass2);font-weight:600}
+.err{color:var(--cs);font-weight:600}
+.reports{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.report{border:1px solid var(--line);background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:6px}
+.report h3{font:600 22px/1.1 "Barlow Condensed",sans-serif;margin:0}
+.report .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.choice{display:flex;flex-wrap:wrap;gap:8px}
+.choice label{border:1px solid var(--line);padding:8px 12px;background:var(--soft);cursor:pointer;display:flex;gap:8px;align-items:center}
+footer{color:var(--muted);font-size:14px;margin-top:28px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+@media print{
+  @page{size:letter;margin:0.45in}
+  :root{padding:0!important}
+  body{background:#fff!important;color:#111!important;font-size:12px}
+  body::before,#status,header.board .toplinks,nav.tabs,.filters,.btn,.tip,.print-hide,footer .noprint,#printbar{display:none!important}
+  header.board{background:#fff!important;color:#111!important;border-bottom:2px solid #111}
+  header.board .wrap{padding:0 0 6px}
+  .brand{color:#111!important}
+  h1{font-size:30px;margin:4px 0 0}
+  .sub{color:#333!important}
+  .wrap{max-width:none;padding:0}
+  .layout{grid-template-columns:1fr 1fr!important;gap:14px;margin-top:12px}
+  .stage,.card,.below{border:1px solid #999;background:#fff!important;padding:10px;break-inside:avoid}
+  .plan{background:#fff!important;color:#111!important;border:2px solid #111;padding:10px 12px 2px;break-inside:avoid}
+  .plan h2{color:#111!important;font-size:20px}
+  .plan li b{color:#111!important}
+  .plan .who{color:#444!important}
+  .note,.stats span,.legend{color:#333!important}
+  svg.field,.cell,.tiles em,.legend i,.tag,.bars .fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table{font-size:11px}
+  th,td{padding:4px 6px}
+  .print-page{break-before:page}
+  .print-page.first{break-before:auto}
+  .print-page.first .layout{margin-top:8px}
+  .print-page.first .layout+.layout{margin-top:10px}
+  .plan li{margin:0 0 5px}
+  .plan h2{margin-bottom:2px}
+  .stats b{font-size:20px}
+  .hcards{grid-template-columns:repeat(3,1fr)!important}
+  .hcard{break-inside:avoid}
+}
+.hcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.hcard{border:1px solid var(--line);background:var(--panel);padding:10px}
+.hcard h3{font:600 18px/1.15 "Barlow Condensed",sans-serif;margin:0}
+.hcard .ln{font:700 15px/1.2 "Barlow Condensed",sans-serif;margin:2px 0 4px}
+.hcard p{margin:4px 0 0;font-size:13px}
+
+.gpick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gcount{font-size:13px;color:var(--muted);margin-right:4px}
+.gchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--soft);padding:5px 10px;font-size:14px;font-weight:600;cursor:pointer;user-select:none}
+.gchip input{width:16px;height:16px;margin:0;accent-color:#1d3a26}
+.gchip small{font-weight:400;color:var(--muted)}
+.gchip.on{background:var(--chip-on,var(--board));color:var(--hit);border-color:var(--chip-on-line,var(--board))}
+.gchip.on small{color:var(--board-muted)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.sprayone .mgrid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:8px}
+.sprayone .mcard{border:1px solid var(--line);background:var(--panel);padding:6px;display:flex;flex-direction:column;min-width:0}
+.sprayone .mh{font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sprayone .mh span{color:var(--muted);font-size:12px}
+.sprayone .mc{margin-top:3px;line-height:1.6}
+.sprayone .mc .call{font-size:12px;padding:0 5px}
+.sprayone .mn{font-size:12px;line-height:1.3;color:var(--ink);margin-top:3px}
+.snote{margin:6px 0 0;font-size:13px;line-height:1.35}
+.custgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.custgrid label,.custgrid .lbl{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
+.custgrid input[type=text],.custgrid input[type=password]{min-width:0;width:100%}
+.colorrow{display:flex;gap:8px;align-items:center}
+.colorrow input[type=color]{width:52px;height:38px;padding:2px;border:1px solid var(--line);background:var(--soft);cursor:pointer}
+.colorrow input[type=text]{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace}
+.logobox{height:110px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed var(--line);padding:8px}
+.logobox img{max-height:94px;max-width:100%}
+.avgb{display:inline-block;font:700 15px/1.25 "Barlow Condensed",sans-serif;background:var(--board);color:var(--hit);padding:0 7px;margin-left:6px;vertical-align:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h2 .avgb{font-size:20px;vertical-align:4px}
+.mh .avgb{font-size:12px;padding:0 5px;margin-left:4px;vertical-align:0}
+@media print{ .sprayone .zlab .za{display:none} .sprayone .zlab rect{display:none} .sprayone .zlab text{font-size:44px;fill:#111;paint-order:stroke;stroke:#fff;stroke-width:9px;stroke-linejoin:round} .avgb{background:#fff!important;color:#111!important;border:1.5px solid #111;font-weight:700} .mh .avgb{font-size:11px} }
+@media print{
+  .hcpage .below{border:0;padding:0}
+  .hcpage h2{margin:0 0 2px}
+  .hcpage .note{margin:0 0 6px;font-size:10px}
+  .hc9{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px}
+  .hc9 .hcard{height:2.88in;overflow:hidden;padding:7px 8px;display:flex;flex-direction:column;border-color:#999;break-inside:avoid}
+  .hc9 .hcard h3{font-size:15px;line-height:1.15}
+  .hc9 .hcard h3 span{font-size:11px!important}
+  .hc9 .hcard .ln{font-size:13px;margin:1px 0 3px}
+  .hc9 .hcard .call{font-size:11px;padding:0 4px;border-width:1px}
+  .hc9 .hc-t{font-size:11px;line-height:1.3;margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;flex:0 0 auto}
+  .hc9 .hc-lines{display:block!important;flex:1 1 auto;min-height:0.25in;margin-top:4px;overflow:hidden}
+  .hc9 .hc-lines i{display:block;height:0.24in;border-bottom:1px solid #b5b5b5}
+}
+@media print{
+  .sprayone .below{border:0;padding:0}
+  .sprayone h2{margin:0 0 2px}
+  .sprayone .note{margin:0 0 6px;font-size:10px}
+  .sprayone .mgrid{gap:5px}
+  .sprayone .mcard{height:calc(8.75in / var(--rows));break-inside:avoid;overflow:hidden;padding:4px;border-color:#999}
+  .sprayone .mcard svg.field{flex:1 1 auto;min-height:0;height:100%;width:100%}
+  .sprayone .mcard .nobip{flex:1 1 auto;aspect-ratio:auto}
+  .sprayone .mh{font-size:11px}.sprayone .mh span{font-size:10px}
+  .sprayone .mc .call{font-size:10px;padding:0 4px;border-width:1px}
+  .sprayone .mn{font-size:9px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:0 0 auto}
+  .sprayone .mc,.sprayone .mh{flex:0 0 auto}
+}
+.call{display:inline-block;font:700 14px/1.3 "Barlow Condensed",sans-serif;letter-spacing:.3px;padding:1px 7px;border:1.5px solid var(--ink);color:var(--ink);background:var(--panel);white-space:nowrap}
+.call.of{border-color:var(--c);color:var(--c)}
+.aligntable td{vertical-align:middle}
+@media print{.call{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.teamswitch option{color:#26352d;background:#fbfbf7}
+.scard{cursor:pointer;transition:border-color .15s}
+.scard:hover{border-color:var(--board)}
+.nobip{aspect-ratio:6/5;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--muted);font-size:14px}
+@media (min-width:1100px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+details.lineup{background:var(--panel);border:1px solid var(--line);padding:10px 14px}
+details.lineup summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+details.lineup summary::-webkit-details-marker{display:none}
+details.lineup .lnames{color:var(--muted);font-size:14px}
+details.lineup .ledit{margin-left:auto;font-size:14px;font-weight:600;text-decoration:underline}
+@media print{details.lineup{display:none!important}}
+#printbar{position:sticky;top:0;z-index:5;background:var(--hit);color:var(--hit-ink);padding:10px 14px;margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* Template theme: logo gray #6d6e71 and white */
+:root{--bg:#f0f1f2;--panel:#fcfcfc;--ink:#2a2b2e;--muted:#626468;--line:#d9dadc;--soft:#f3f4f5;
+  --board:#4f5155;--board-ink:#f7f7f8;--board-muted:#cfd0d3;
+  --plan-bg:#eceded;--plan-line:#6d6e71;--plan-head:#4f5155;--chip-on:#4f5155;--chip-on-line:#4f5155;--dc:#4f5155;--dc-soft:#c4c6ca}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161718;--panel:#1e1f21;--ink:#dcdddf;--muted:#a2a4a8;--line:#323438;--soft:#232427;--board:#2c2e31;--board-muted:#b4b6ba;--plan-bg:#25272a;--plan-line:#8a8c90;--plan-head:#d0d2d5;--chip-on:#44464a;--chip-on-line:#8a8c90;--dc:#5a5c60}}
+:root[data-theme="dark"]{--bg:#161718;--panel:#1e1f21;--ink:#dcdddf;--muted:#a2a4a8;--line:#323438;--soft:#232427;--board:#2c2e31;--board-muted:#b4b6ba;--plan-bg:#25272a;--plan-line:#8a8c90;--plan-head:#d0d2d5;--chip-on:#44464a;--chip-on-line:#8a8c90;--dc:#5a5c60}
+.brand{color:#fff;display:inline-flex;align-items:center;gap:10px}
+.brandlogo{height:46px;width:auto;background:#fff;border-radius:8px;padding:4px 5px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+nav.tabs a[aria-current="page"]{border-top-color:var(--dc-soft)}
+.btn.primary{background:var(--dc);color:#fff;border-color:var(--dc)}
+.seg button[aria-pressed="true"]{color:#fff}
+.gchip.on{color:#fff}
+.gchip input{accent-color:#4f5155}
+.avgb{background:var(--dc);color:#fff}
+#printbar{background:var(--dc);color:#fff}
+@media print{ header.board .brandlogo{box-shadow:none;border:1px solid #ccc} .brand{color:#111!important} }
+
+</style>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAQT0lEQVR42u2baXBVZZrHf+c959w1ublJuEsCIWyBhCQoaJcGlGkEtBEBFWVzo7VbbceunprqqpkvU+3UVM2M1V967Gm1FYeu7rGrG7FdcANB0BaFQCNLnCYSbQMhJCF77nbu2ebDzT0kuUlAtJ2pMm/VqST3vud5z/k/z/N/lveNZNu2zTd4CL7hYwKACQAmAJgAYAKACQAmAJgA4Bs7lPG+tCwLIQSffvoZBw7U09LSQlrXMUwdv8/PDx5+kPz8fGzbRpKkr/XBh665f/8HJJJJbMtClmVKJ5cya+ZMVFW96LMp4y0ghODAgYO8uuMNEokE6bSGJElYlkVeXhLDNBmrlBht4aFzLxewrIyh8t/evYd4PIFpmkiShBCCkmiUtWtvpby8fFwQxFialySJrq4uXt3xOrHYALZtkZ+Xx+TJpUyeXEIkEkWR5TEFD/3csmzns+xl2zaXU4dl7xdCXJAhBKrqwuVSEUKQTCb5vPk0z27ZSl9fXw74l+wCBw8eRtd1JEkiGo2w+b57iUTCwx4mmUzi9XpzNJ9OpwFQVRUhMmC0tbUTi8coKiyiqKhw2HzTNLEsK8ds0+k0iqIghCCdTpNOp7EsC0VR8Pl8ANy9cT2alsbGpvN8J7ve3kMikUDTNN5//wNWrlzhKPWSAMhOPH2mGU3T8Hi9LF58PSUl0Zy5217YTkVFBQvrrnUWicViPPX0M2y+7x5CoRCnmprYt+9d3C4PHq+bgYEBPB4vt6y8mYKCAABHjhyltbWVNWtWYQ36MsBvnv8tt65eTXFxEc8//1sSySQetxfDMPH7vaxatZJZs2YNeyaXy8XLr7yGpqVobDzFypUrEEJcugVkAUgmkhk/kSRCodCgKWe4IUuQy5cv45lntnDFvFq8Xi+SJLF9+4tUVs7OvPypJra9sJ2NG9YzY8Z0Z439+z/k2S3P8fBD3ycvL4+UliKZTOY8SzwWw7IsAPoHYqxcuYJZM2eSTqd5862dbNv2Ig88sPmCiUsSs2bNxLYtDMNgINZPOp3G5XKNygVifMKRhvgdjikDDgilJSUsWrSQ3/3+BYQQnGhooLOrh5U334xlWbzyyg5uXbOGGTOmY1mWcy1aVMf0adN47fU3HZCHys8OWVzQkZBlXC7V0fKiRQvp7ulBCIEsy5mfg3yQBc0wrHG55kvlAdmIsHzZUmIDMT766Bh7977LHWtvQwhBe3s7pmUxd26VE1WEEM59dXXX8NlnfxkCaO6DWlgX1sOmo6OT3t4+2tra2f7CS1RWznGIe7QIdLFgo3xZALJj06YNbHluKwvmX8G0aeUADAzE8Hg9SBKMVIIQAp/P52jnUsKibdscPnSIgwfqOd/ZxbKlS1i0qC7n/i8SYr90JpgNaaHQJAKBADW1Nc5LFQQLSA36tW0Pj+GWZdHfP4AQshMqZUUZNiejdbCxHRmrVq3iwQcfwONxccUV85z1Lzev+EpS4ezisiI7yYhlWUTCYTweN/X1hxBCcuZlXWHfe+8xtypjwj6/j77eniGmm5GRTKbweX2D98kkkglUVWXx9dfxX1t//f+rFkhrmuOLWQ3esfZ2dr+zlxMnGpzvNE1j56636enuZsWKm7Btm6rKOZzv7Kah4WMnBL7x5k5Ck0Lk5fkHCU13AFq4sA7DSHOw/pBjBV95LfBFRzQawe12O1q2bZvJkyfzwHfvY+eutzl48BCKomAYaYqLQzz00IO4XBnGdrvd3H3XRl5+ZQeHDh1GN3RcLg8bNtzpmHgkGsHjdjt/33HH7eze/Q5XLZiPLMuX5QpfGoCsVoUQrLvzjhxuME2TSCTCvffcTW9fH6lUioJAYFj2mA2pZWVT+OGjP6Cj4zyyLCguLnasybZtNq5f57ykZdmUT53KA/dvvviLj2MdyqW83Lg+JMS43JA1Z4BgQQEUFAyrNEeTEw6Hxow2F3hkbNa/4A4StmVhfxELyN6c1nV6+3oy6a0QeAZNe+Tco0ePI0lw5ZVXjBqHjx07TkPD/9DV3U2wsIDqqioWLJjvuIgkSei6zp+OfMTJk40M9A9QVFRIxewKamuqHUsxDIMjR45y8mQjvX09hMMhaqprqKmpzk2eZOHkAGnDIJ1O4/F4Lg5A1mQVRaGxsRHDyDC6bZqEQqEctG3bZvuLL6EbugPA0OLmN7/5bz459alT1Jw7p9J48hMOHT7Cdzffg6qqJBIJnt2ylY6ODizLwjB0WtvaONPSiqEbLFx4LYlEkq2/+hWtre1Ylomu67S1dXDixJ+pnnuCjZvWM1TNfr8fv89HMplESBLNp09TW1MzrMYYFQBJklAUhb6+Pl5//U1SKQ2Px0NtbQ0ejyfHbLOhz+VScrT/3h/f51TTXygqLGLdurWEI2G6u7r4w0uvcvr0aXbt2s2qVSt5+eVXaWtrZ1bFDNasuoVgMMjZ1lZON5+mru4aAHa8/hqtre2Ul5exetVKgsEg5861sW3bC/z5ZCMHDtRTd+01jssqikLFnNkM/OkIiUSCd/bspbamBlmWc11v6Mt0dXVx5MhH/Pw/n+TcuTaEkAgEAtx883fGJBrbsrBMK8eX6+sPYVkmGzfeydSpZXjcbkpLS7lr03pM0+TYsWPE43E+OnoMl0vh3rvvIhQKIYSgbMoUFi6sQ9M0dF3n+LEGJMnmrk0biEajeDwepk+fxrp1d2KaFocPH86xzmU3LMHr9WLbNqfPtLD1V7+mt7cvR4HDLOCXv9xCT28fmpbC4/Ewc9YMVt+S0coXCTG6rtPT3YMkBOFwaJDFAWwKCwvx+7zEEwnaOzpIpZKUlU1xwuGHH9aze88e4vE45eVT2bghw/yBQAF+v98puW3bJhqNkEjE6ersHqZZy7KIRiPcftsaXnjxD8RjcY4fb6CxsZHZFRXcf//m0S0gHo+TSMRRFIXQpEnctHw5JSVRJ7sbJxQMR1VR8Po8CEkilcq20UyEEOi6QUpLo6ouAvn5yLJCf3+/Yz3BYAFTy8owTZOBWAyPx4tlWaRSyWEhM9v58Xg8eLzenIhiWRZXXbWAH//931E9twohJGKxOH8+2Th2JlhbW0tRcTFCCD5vbmbLc1t5e/cex3fGbFGRSVuzOb4kSVTPrcZG4o03dzrEalkWb+3ciWVZTJ82jUmTJjF9ejkDA3H27nsXgJqaudx//30ECgowdR2/38fUsjKSyRRvvrVrkOVldF1nx+tvZNaqrhwWtrOVZ29vLzt37eZMSwvpdBqv1zss/wCQRh6QSKVSvPHWW3z4wUE0LUVBQZBNm9ZTVVmZQyCmafKTx/6FWCw22NmR8Pl83H77GkqiJfzsP54gFkvg9bgpLS2h/fx5YgMxXC4XjzzyENFIhObm0zz9y2czxVNBgOKiQjq7uuju7sXr8/LPP/knWlrO8syzz5FOpyksLKC4qJiWs61omkYwGODRR/+WPL9/mJvqus4TP3+KtrZzpFIpAvn53HjTcqoq5xAOX2jryY899thjQxMfVVWpqqykva2d8+c70TSN8x3nqau7dtQw2NTUhCwESBKyrKAoKpVzZlNSEqW6uppkKkVLy1nOtLSAbVNTXcPGjeuIRCJYlk1hYZDZsyvo6+unubmZ1tY2DMOkfOpUvv03i5kyZQoFBQHmzJ5Nf2yA5uYznG09h8vt5qoF89mwYT35eXnDCihJkti37z2OnziBpqUJBoM89OD3mDevFr/fP74FZLXc1t7Oz372c/r7BwgE8vnHf/jxFyLDkdpIpTRUVXESkiyv2LbtxOZEIomuZ9pXWVMd2S9IJpPouo7b48Htco2aVQI8/vhPaTnbis/nY+nSJdy4fBmGYSCP6GQro6W2tm0TCYfx+33EYnFkWaarq/sLATB0jqqqqKo6IluTc8Dy+byAd1Q52Tmj+XH25bNzYrEYXd09DjDzr7zSAXrks4/bFM3z+zkvOrEsC9MyR9VwQ8PHpHWdBfOvdMxPkiQ0TWPv3ndZvPh6fD4vbW3t1NfX09/fj42UydykzBqrV69CliX27HmH9vYOTNNCVgUl0RK+dfVV5OXlIUkSx4+f4FTTpyTiiQzRyQJFFkybNo1rBxOhDEEaw54lL88/Zsl8SU3R8QqOk598wvHjDbm9gXSaDz484ISv1tZWjhw5RjRaQjgcIhoNE42EmTSpyOnbvb//QxCCktIIxUXFnDzZyBNP/ILu7u5M6/zoUc61nqW0tIRIJEQkHCYcjhAIBMZ8xuyewl+tHHa7XBhuPWenx7ZtXC51mKmHw5NYtuyGMWX5fF6+vfg6SktLnc9+8eRT/PH991mzejUCQVVVFUuXLrmo2319/QDbQgg5p/T1+33DLCVT6IxfXpumjaalhxFbsCBIMqFlvrdNTNP8+naHL0mArHCuu52Gho8xLRMJydkyM3TD0YqiKGhakhMnGjL8ISRkIRMMFjgalySb3t5euru7kSSJk42f0PTpp9x916bMXoCi0t7RkVnLNJ39gLKyKeTn5/8fAaAonO/qZN++P2KYhpMZ62kTwzAc/1MUhXhCY+++9zJkJQSK6qKmutIBQAiJHa+9gaIq9PX2MX16OWtvv42ZM2dk3M3t5pOmJvp6BzBMAyEkXC4PN6+48bK36b80AClNY05FBevWrc0hwX9//KeOyWqaRnFRkB/+8JGxSdeyWXfnWqZPn8YvnnyaebXzqKmpRtd1VFUlmUxy9YL53Hjj8q+MAy65K2yP01jKvmR2hzf7wrkttowPG4aBaZrOdYFPJBRVwe12s3btbezes4fe3j4UJaMnSWSSKtM0nZ8jZfzVAJAY44CBJCEJadjeffb37DbY0IRIlmUURUGWZecamtBIZOJ1+dSpVM6Zw++3bb8gwxZ4vR5kWXZkjZTxlXKALAunljcGk4ushi3LRpJstHTaifUjY7BuGMO6xufOtfPiH17CNK1BQG3cbjc3LF1Cnt9PIj7gJDCWZXHrrav51397nP37P2DRooWYpsHhP31EX/8Auq5n+MW2KS4uZsmSbw+JOOaQFPoyAMiSSTAYRFEUdD3NycZGqqoqHVLL5hZXL5iPrhs5PujxeLhl5QrnEEN5eTnfWXETAwP9Tv/OHgQgK3P16lXDDmC4XC7uu/duunt6Abj++kWcPnMWLZXC9toZa8F2CpysnO7uHlRVRdM03G63s1cxGkdIo/2/QDYG1x86zEsvvUIiHsfldrP0hiVES6JgZ/bxKivnoCpf6d7KZQ9d1zNNnUSC3z7/O041NSFJEvNqq9m8+b4xI4QyXq9//pVXsHfve2iaRiqV4u3de1BVFcuy8Pv9/OhHj1IQCDgNiLHOGl3sTNDQVtZIOUOrwdG2wG3b5smnnqZn0EpisRi6niHGQCDAouuuG/PQ1rgkaNs2qqry/e99l9kVFY6ZZc/p6LruCB3zBNYQEsyS4mjXeJssQ+WPdm+2Uu3s7KKjo4NkMoVtW/j9eSysu5aKWTPHVNC4JJhFt6iokIcf/j6fffYXPv+8eTBVtVFdqlOWft1nBEeOUCiEJInBUywyJdEo11zzLWpqqi+6aSpN/M/QN3xMADABwAQAEwBMADABwAQAEwBMAPBNHf8LLZ4Ax9sO8PcAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<meta name="apple-mobile-web-app-title" content="Dugout Scout">
+<meta name="theme-color" content="#4f5155">
+</head>
+<body>
+<header class="board"><div class="wrap" id="head"></div></header>
+<main class="wrap" id="app"></main>
+<div class="tip" id="tip" role="status"></div>
+<script>
+/* Scouting engine: reads GameChanger play-by-play text and builds a scouting model. */
+const ENGINE = (() => {
+  const POS = {'pitcher':1,'catcher':2,'first baseman':3,'second baseman':4,'third baseman':5,'shortstop':6,'left fielder':7,'center fielder':8,'right fielder':9};
+  const POS_RE = /(pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)/g;
+  const SPOT = {1:[45,.2],2:[45,.07],3:[82,.36],4:[62,.48],5:[8,.36],6:[28,.48],7:[18,.75],8:[45,.8],9:[72,.75]};
+  const HALF_RE = /^(Top|Bottom)\s+(\d+)(?:st|nd|rd|th)\s*-\s*(.+)$/i;
+  const OUTS_RE = /^(\d)\s+Outs?$/i;
+  const SCORE_RE = /^[A-Za-z0-9.&' ]+\s\d+\s-\s[A-Za-z0-9.&' ]+\s\d+(?:\s*\|\s*(\d)\s+Outs?)?$/;
+  const VERB_RE = /^(.+?)\s(singles|doubles|triples|homers|hits a (?:home run|grand slam|ground ball|pop fly|line drive|fly ball|hard ground ball)|grounds|lines|flies|pops|strikes out|walks|is intentionally walked|is hit by pitch|out on|sacrifices|bunts|reaches|out at first|is out|hits into|hit by pitch)\b/;
+  const ord = n => n + (n%10===1&&n%100!==11?'st':n%10===2&&n%100!==12?'nd':n%10===3&&n%100!==13?'rd':'th');
+
+  function posList(str){ const out=[]; let m; POS_RE.lastIndex=0; while((m=POS_RE.exec(str))) out.push(POS[m[1]]); return out; }
+
+  function parsePitches(line){
+    const toks = line.replace(/\.\s*$/,'').split(/,\s*/);
+    const seq=[], runs=[], changes=[];
+    let wp=0, pb=0, scores=0;
+    toks.forEach(raw => {
+      const t = raw.trim();
+      let m;
+      if (/^Ball\s+\d+$/i.test(t)) seq.push('B');
+      else if (/^Strike\s+\d+\s+looking$/i.test(t)) seq.push('C');
+      else if (/^Strike\s+\d+\s+swinging$/i.test(t)) seq.push('S');
+      else if (/^Strike\s+\d+$/i.test(t)) seq.push('C');
+      else if (/^Foul(\s+bunt|\s+tip)?$/i.test(t)) seq.push('F');
+      else if (/^In play$/i.test(t)) seq.push('X');
+      else if ((m = t.match(/^(.+?)\s+steals\s+(2nd|3rd|home)/i))) runs.push({kind:'SB', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+caught stealing\s+(2nd|3rd|home)/i))) runs.push({kind:'CS', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+picked off at\s+(1st|2nd|3rd)/i))) runs.push({kind:'PO', r:m[1], to:m[2], at:seq.length});
+      else if ((m = t.match(/^(.+?)\s+in for pitcher\s+(.+)$/i))) changes.push(m[2].trim().replace(/\.$/,''));
+      else if ((m = t.match(/^Lineup changed:\s*(.+?)\s+in at pitcher/i))) changes.push(m[1].trim().replace(/\.$/,''));
+      if (/on wild pitch/i.test(t)) { wp++; m=t.match(/^(.+?)\s+(advances to|scores)/i); if(m) runs.push({kind:'WP', r:m[1], to:/scores/i.test(t)?'home':(t.match(/to (2nd|3rd)/i)||[])[1], at:seq.length}); }
+      if (/on passed ball/i.test(t)) { pb++; m=t.match(/^(.+?)\s+(advances to|scores)/i); if(m) runs.push({kind:'PB', r:m[1], to:/scores/i.test(t)?'home':(t.match(/to (2nd|3rd)/i)||[])[1], at:seq.length}); }
+      if (/\sscores\b/i.test(t)) scores++;
+    });
+    return {seq, runs, changes, wp, pb, scores};
+  }
+
+  function blocksFrom(lines){
+    const halves=[]; let half=null, ev=null;
+    for (const raw of lines){
+      const line = raw.trim(); if(!line) continue;
+      let m = line.match(HALF_RE);
+      if (m){ half={top:/^top$/i.test(m[1]), inning:+m[2], bat:m[3].trim(), events:[]}; halves.push(half); ev=null; continue; }
+      if (!half) continue;
+      if (/\sat bat$/i.test(line)) continue;
+      if (OUTS_RE.test(line) || SCORE_RE.test(line)){ if(ev){ const o=line.match(OUTS_RE)||line.match(SCORE_RE); if(o&&o[1]!==undefined) ev.outsAfter=+o[1]; } continue; }
+      const isText = /\.$/.test(line) || /,/.test(line);
+      if (!isText){ ev={title:line, lines:[]}; half.events.push(ev); continue; }
+      if (ev) ev.lines.push(line);
+    }
+    return halves;
+  }
+
+  function looksLikePitches(line){
+    const toks=line.replace(/\.\s*$/,'').split(/,\s*/);
+    return toks.some(t=>/^(Ball|Strike|Foul|In play)\b/i.test(t.trim())) || /^(Ball|Strike|Foul|In play|Pickoff|Courtesy|Lineup changed)/i.test(line);
+  }
+
+  function notation(ev, desc){
+    const t = ev.title.toLowerCase();
+    const chunks = desc.replace(/\.\s*$/,'').split(/,\s*/);
+    let chain = posList(chunks[0]);
+    for (let i=1;i<chunks.length;i++){ if (/^(pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)\b/i.test(chunks[i])) chain = chain.concat(posList(chunks[i])); else break; }
+    const errM = desc.match(/error by (pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)/i);
+    const errTail = (!/^error$/.test(t) && errM) ? ', E'+POS[errM[1].toLowerCase()] : '';
+    const bunt = /bunt/i.test(desc);
+    const rbi = chunks.slice(1).filter(c=>/\sscores\b/i.test(c) && !/error/i.test(c)).length + (/home run/.test(t)?1:0);
+    const rbiTag = rbi && !/^error$/.test(t) ? (rbi>1?` (${rbi} RBI)`:' (RBI)') : '';
+    const first = chain[0];
+    let res;
+    if (/^single$/.test(t)) res='1B'+(first?'-'+first:'');
+    else if (/^double$/.test(t)) res='2B'+(first?'-'+first:'');
+    else if (/^triple$/.test(t)) res='3B'+(first?'-'+first:'');
+    else if (/home run/.test(t)){ res='HR'; const fm=desc.match(/(left|center|right)[- ]?(?:center |field|fielder)/i); if(!chain.length&&fm) chain=[{left:7,center:8,right:9}[fm[1].toLowerCase()]]; }
+    else if (/intentional walk/.test(t)) res='IBB';
+    else if (/^walk$/.test(t)) res='BB';
+    else if (/hit by pitch/.test(t)) res='HBP';
+    else if (/dropped 3rd/.test(t)) res=/looking/i.test(desc)?'ꓘ (D3)':'K (D3)';
+    else if (/strikeout/.test(t)) res=/looking/i.test(desc)?'ꓘ':'K';
+    else if (/ground out/.test(t)) res= chain.length>1 ? chain.join('-') : (first? first+'U':'GO');
+    else if (/line out/.test(t)) res='L'+(first||'');
+    else if (/fly out/.test(t)) res='F'+(first||'');
+    else if (/pop out/.test(t)) res='P'+(first||'');
+    else if (/sacrifice fly/.test(t)) res='SF'+(first||'');
+    else if (/sacrifice bunt|sacrifice/.test(t)) res='SAC'+(chain.length?' '+chain.join('-'):'');
+    else if (/fielder.?s choice/.test(t)) res='FC'+(chain.length?' '+chain.join('-'):'');
+    else if (/double play/.test(t)) res=(/lines into|line drive/i.test(desc)?'L':'')+(chain.length?chain.join('-')+' ':'')+'DP';
+    else if (/triple play/.test(t)) res=(/lines into|line drive/i.test(desc)?'L':'')+(chain.length?chain.join('-')+' ':'')+'TP';
+    else if (/^error$/.test(t)) res= errM ? 'E'+POS[errM[1].toLowerCase()] : 'E';
+    else res=ev.title;
+    if (bunt && /^(1B|E)/.test(res)) res+=' (bunt)';
+    return {res: res+errTail+rbiTag, chain, rbi};
+  }
+
+  function battedType(title, desc){
+    const d=desc.toLowerCase(), t=title.toLowerCase();
+    if (/bunt|sacrifices to/.test(d) || /sacrifice bunt/.test(t)) return 'BU';
+    if (/pop fly|pops out/.test(d)) return 'PU';
+    if (/line drive|lines out|lines into/.test(d)) return 'LD';
+    if (/fly ball|flies out|sacrifice fly/.test(d)) return 'FB';
+    if (/ground ball|grounds|ground into/.test(d)) return 'GB';
+    if (/home run/.test(t)) return 'FB';
+    return null;
+  }
+
+  function spot(res, type, chain){
+    const p = chain[0];
+    if (/^HR/.test(res)) return [p?SPOT[p][0]:45,1.06];
+    if (!p) return type==='BU'?[45,.12]:null;
+    let [a,d] = SPOT[p];
+    const outfield = p>=7;
+    if (/^1B/.test(res)) d = outfield ? (type==='GB'?.62:.7) : (p<=2?.2:.5);
+    else if (/^2B/.test(res)) d = outfield ? .92 : .5;
+    else if (/^3B/.test(res)) d = outfield ? .98 : .5;
+    if (type==='BU') d = Math.min(d,.22);
+    return [a,d];
+  }
+
+  function parseGame(text, label){
+    const halves = blocksFrom(text.split(/\r?\n/));
+    if (!halves.length) return {ok:false, error:'No innings found. Paste the play-by-play starting with a line like “Top 1st - Team Name”.'};
+    const rank = h => h.inning*2 + (h.top?0:1);
+    if (rank(halves[0]) > rank(halves[halves.length-1])) { halves.reverse(); halves.forEach(h=>h.events.reverse()); }
+    else if (halves.length===1 && halves[0].events.length>1) { /* single half: leave as is */ }
+    const teams=[...new Set(halves.map(h=>h.bat))];
+    const out={ok:true, label, teams, halves:[]};
+    for (const h of halves){
+      let outs=0; const H={top:h.top, inning:h.inning, bat:h.bat, events:[]};
+      for (const ev of h.events){
+        if (!ev.lines.length) continue;
+        let pitchLine='', desc='';
+        if (ev.lines.length>=2){ pitchLine=ev.lines[0]; desc=ev.lines[ev.lines.length-1]; }
+        else if (looksLikePitches(ev.lines[0])) pitchLine=ev.lines[0]; else desc=ev.lines[0];
+        const P = pitchLine ? parsePitches(pitchLine) : {seq:[],runs:[],changes:[],wp:0,pb:0,scores:0};
+        if (/hit by pitch/i.test(ev.title)) P.seq.push('H');
+        const vm = desc.match(VERB_RE);
+        const batter = vm ? vm[1].trim() : null;
+        const N = desc ? notation(ev, desc) : {res:ev.title, chain:[], rbi:0};
+        const type = desc ? battedType(ev.title, desc) : null;
+        const inPlay = P.seq[P.seq.length-1]==='X';
+        const outsBefore = outs;
+        const outsAfter = ev.outsAfter!==undefined ? ev.outsAfter : outs;
+        outs = outsAfter;
+        const pm = desc.match(/,\s*([^,]+?)\s+pitching\b/);
+        const fieldP = desc.match(/\bpitcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/);
+        const descScores = (desc.match(/\sscores\b/g)||[]).length;
+        const descRuns = [];
+        desc.replace(/\.\s*$/,'').split(/,\s*/).slice(1).forEach(c=>{ let m;
+          if ((m=c.match(/^(.+?)\s+out advancing to\s+(2nd|3rd|home|1st)/i))) descRuns.push({kind:'OA', r:m[1], to:m[2]});
+          else if ((m=c.match(/^(.+?)\s+held up at\s+(2nd|3rd)/i))) descRuns.push({kind:'HELD', r:m[1], to:m[2]});
+          else if ((m=c.match(/^(.+?)\s+advances to\s+(2nd|3rd)\s+on (?:an\s+)?error/i))) descRuns.push({kind:'E', r:m[1], to:m[2]});
+        });
+        const scorers=[]; (pitchLine+', '+desc).split(/,\s*/).forEach(c=>{const m=c.match(/^(.+?)\s+scores\b/i); if(m) scorers.push(m[1].trim());}); const isHR=/home run/i.test(ev.title); if(isHR&&batter) scorers.push(batter);
+        H.events.push({
+          title:ev.title, desc, pitchLine, hard:/\bhard\b/i.test(desc), batter, seq:P.seq.join(''), runs:P.runs, descRuns, changes:P.changes,
+          res:N.res, chain:N.chain, rbi:N.rbi, type, inPlay, spot: inPlay && type ? spot(N.res,type,N.chain) : null,
+          outsBefore, outsAfter, outsMade: Math.max(0,outsAfter-outsBefore),
+          wp:P.wp, pb:P.pb, runsScored: P.scores+descScores+(isHR?1:0), scorers,
+          pitcherNamed: pm ? pm[1].trim().replace(/\.$/,'') : (fieldP ? fieldP[1].trim().replace(/\.$/,'') : null)
+        });
+      }
+      out.halves.push(H);
+    }
+    return out;
+  }
+
+  /* Build the scouting model for one opponent across many games */
+  function build(games, opp, opts){
+    const EX = new Set((opts&&opts.exclude)||[]);
+    const SW = c => c==='S'||c==='F'||c==='X';
+    const pas=[], bip=[], steals=[], other=[], hitters={}, pitchers={}, scored={};
+    const defense={sbAgainst:0, csAgainst:0, pb:0, wp:0, errors:0, catcher:null, oppErrors:[]};
+    games.forEach((g,gi)=>{
+      const gl = g.label || ('G'+(gi+1));
+      let lastP = null;
+      // assign pitchers for halves where opp is fielding
+      const fielding = g.halves.filter(h=>h.bat!==opp);
+      const flat = []; fielding.forEach(h=>h.events.forEach(e=>flat.push(e)));
+      flat.forEach(e=>{ if(e.changes.length) e._chg=e.changes[e.changes.length-1]; });
+      let cur=null; flat.forEach(e=>{ if(e._chg) cur=e._chg; e.pitcher = e.pitcherNamed || cur || null; if(e.pitcherNamed) cur=e.pitcherNamed; });
+      for (let i=flat.length-1, nxt=null;i>=0;i--){ if(flat[i].pitcher) nxt=flat[i].pitcher; else flat[i].pitcher=nxt; }
+      fielding.forEach(h=>h.events.forEach(e=>{
+        const p=e.pitcher||'Unknown pitcher'; if (EX.has(p)) { defense.pb+=e.pb; defense.wp+=e.wp; e.runs.forEach(r=>{ if(r.kind==='SB') defense.sbAgainst++; if(r.kind==='CS') defense.csAgainst++; }); return; } const P=pitchers[p+'|'+gl]=pitchers[p+'|'+gl]||{n:p,g:gl,bf:0,outs:0,h:0,r:0,bb:0,hbp:0,k:0,kl:0,wp:0,pitches:0,firstStrikes:0};
+        if (e.batter){ P.bf++; P.pitches+=e.seq.length; if(e.seq[0]&&e.seq[0]!=='B'&&e.seq[0]!=='H') P.firstStrikes++; }
+        P.outs+=e.outsMade; P.r+=e.runsScored; P.wp+=e.wp;
+        if (/^(1B|2B|3B|HR)/.test(e.res)) P.h++;
+        if (/^(BB|IBB)/.test(e.res)) P.bb++;
+        if (/^HBP/.test(e.res)) P.hbp++;
+        if (/^K/.test(e.res)) P.k++;
+        if (/^ꓘ/.test(e.res)) { P.k++; P.kl++; }
+        defense.pb+=e.pb; defense.wp+=e.wp;
+        e.runs.forEach(r=>{ if(r.kind==='SB') defense.sbAgainst++; if(r.kind==='CS') defense.csAgainst++; });
+        const em=e.desc.match(/error by (pitcher|catcher|first baseman|second baseman|third baseman|shortstop|left fielder|center fielder|right fielder)\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/i);
+        if (em){ defense.errors++; defense.oppErrors.push({g:gl, inn:ord(h.inning), who:em[2].replace(/\.$/,''), pos:POS[em[1].toLowerCase()]}); }
+        const pl=e.pitchLine.match(/error by catcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/);
+        if (pl){ defense.errors++; defense.oppErrors.push({g:gl, inn:ord(h.inning), who:pl[1].replace(/\.$/,''), pos:2}); }
+        const cm=(e.desc+' '+e.pitchLine).match(/catcher\s+([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+)+)/); if(cm) defense.catcher=cm[1].replace(/\.$/,'');
+      }));
+      // opponent batting
+      g.halves.filter(h=>h.bat===opp).forEach(h=>h.events.forEach(e=>{
+        const inn=ord(h.inning);
+        e.scorers.forEach(s=>{ scored[s]=(scored[s]||0)+1; });
+        e.runs.forEach(r=>{
+          if (EX.has(r.r)) return;
+          const k=r.at; let b=0,s=0; const upto = k>0 ? k-1 : 0;
+          for (let i=0;i<upto;i++){ const c=e.seq[i]; if(c==='B') b++; else if(c==='C'||c==='S'||(c==='F'&&s<2)) s++; }
+          const pitchC = k>0 ? e.seq[k-1] : e.seq[0];
+          const name={B:'Ball',C:'Called strike',S:'Swinging strike',F:'Foul',X:'In play',H:'Hit by pitch'}[pitchC]||'—';
+          const from = r.to==='2nd'?1:r.to==='3rd'?2:r.to==='home'?3:0;
+          if (r.kind==='SB'||r.kind==='CS') steals.push({g:gl,inn,r:r.r,from,to:from+1,res:r.kind,cnt:`${b}-${s}`,pitch:name,bat:e.batter||'',outs:e.outsBefore});
+          else if (r.kind==='PO') other.push({g:gl,inn,r:r.r,play:`Picked off at ${r.to}`});
+          else other.push({g:gl,inn,r:r.r,play:`${r.to==='home'?'Scored':'Took '+r.to} on a ${r.kind==='WP'?'wild pitch':'passed ball'}`});
+        });
+        e.descRuns.filter(r=>!EX.has(r.r)).forEach(r=>other.push({g:gl,inn,r:r.r,play: r.kind==='OA'?`Thrown out advancing to ${r.to}`: r.kind==='HELD'?`Held at ${r.to}`:`Took ${r.to} on an error`}));
+        if (!e.batter || EX.has(e.batter)) return;
+        const pa={g:gl,h:e.batter,inn,seq:e.seq,res:e.res,type:e.type,outs:e.outsBefore};
+        pas.push(pa);
+        const H=hitters[e.batter]=hitters[e.batter]||{name:e.batter,pa:[],games:new Set(),spots:[]};
+        H.pa.push(pa); H.games.add(gl);
+        if (e.inPlay && e.spot) bip.push({g:gl,h:e.batter,inn,type:e.type,res:e.res,a:e.spot[0],d:e.spot[1],hard:!!e.hard,on:/^(1B|2B|3B|HR|E)/.test(e.res)});
+      }));
+    });
+    // hitter lines
+    Object.values(hitters).forEach(H=>{
+      let ab=0,h=0,bb=0,hbp=0,k=0,kl=0,e=0,rbi=0,sac=0; const xbh=[];
+      H.pa.forEach(p=>{ const r=p.res;
+        const walk=/^(BB|IBB)/.test(r), hp=/^HBP/.test(r), sc=/^(SAC|SF)/.test(r);
+        if(walk) bb++; else if(hp) hbp++; else if(sc) sac++; else ab++;
+        if(/^(1B|2B|3B|HR)/.test(r)) h++;
+        const x=r.match(/^(2B|3B|HR)/); if(x) xbh.push(x[1]);
+        if(/^K/.test(r)) k++; if(/^ꓘ/.test(r)) kl++;
+        if(/^E/.test(r)) e++;
+        const m=r.match(/\((\d+ )?RBI\)/); if(m) rbi+= m[1]?+m[1]:1;
+      });
+      const sb=steals.filter(s=>s.r===H.name&&s.res==='SB').length, cs=steals.filter(s=>s.r===H.name&&s.res==='CS').length;
+      const avgTxt=ab?(h/ab).toFixed(3).replace(/^0\./,'.'):'';
+      const parts=[`${h}-for-${ab}${ab?' ('+avgTxt+')':''}`].concat(xbh, bb?[(bb>1?bb+' ':'')+'BB']:[], hbp?[(hbp>1?hbp+' ':'')+'HBP']:[], k?[(k>1?k+' ':'')+'K']:[], kl?[(kl>1?kl+' ':'')+'ꓘ']:[], e?[(e>1?e+' ':'')+'E']:[], rbi?[(rbi>1?rbi+' ':'')+'RBI']:[], scored[H.name]?[(scored[H.name]>1?scored[H.name]+' ':'')+'R']:[], sb?[(sb>1?sb+' ':'')+'SB']:[], cs?[(cs>1?cs+' ':'')+'CS']:[]);
+      H.line=parts.join(', '); H.ab=ab; H.h=h; H.avg=ab?h/ab:null; H.avgTxt=avgTxt; H.bb=bb; H.hbp=hbp; H.k=k+kl; H.kl=kl; H.xbh=xbh; H.sb=sb; H.cs=cs; H.r=scored[H.name]||0;
+      H.onBase = H.pa.filter(p=>/^(1B|2B|3B|HR|BB|IBB|HBP|E|FC)/.test(p.res)).length;
+      const ps=[]; H.pa.forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{ps.push({b,s,c,k});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+      H.pitches=ps.length; H.swings=ps.filter(x=>SW(x.c)).length; H.whiffs=ps.filter(x=>x.c==='S').length; H.called=ps.filter(x=>x.c==='C').length;
+      H.fp=H.pa.filter(p=>p.seq.length).length; H.fps=H.pa.filter(p=>SW(p.seq[0])).length;
+      const mine=bip.filter(b=>b.h===H.name); H.bip=mine.length;
+      H.left=mine.filter(b=>b.a<35).length; H.right=mine.filter(b=>b.a>55).length; H.mid=H.bip-H.left-H.right;
+      H.bunts=H.pa.filter(p=>p.type==='BU').length;
+      H.read=hitterRead(H); H.shade=hitterShade(H,mine);
+    });
+    const runners={};
+    steals.forEach(s=>{const R=runners[s.r]=runners[s.r]||{n:s.r,att:0,sb:0,cs:0,zero:0}; R.att++; if(s.res==='SB')R.sb++; else R.cs++; if(s.cnt==='0-0')R.zero++;});
+    Object.values(hitters).forEach(H=>{ if(H.onBase && !runners[H.name]) runners[H.name]={n:H.name,att:0,sb:0,cs:0,zero:0}; });
+    Object.values(runners).forEach(R=>{ R.onb = hitters[R.n]?hitters[R.n].onBase:null; R.read = runnerRead(R); });
+    const pitcherList=Object.values(pitchers).filter(p=>p.bf>0);
+    pitcherList.forEach(p=>{ p.ip=Math.floor(p.outs/3)+'.'+(p.outs%3); p.note=pitcherNote(p); });
+    const model={opp, games:games.map((g,i)=>g.label||('G'+(i+1))), pas, bip, steals, other, hitters, runners, pitchers:pitcherList, defense};
+    model.plan=gamePlan(model);
+    return model;
+  }
+
+  function pct(a,n){ return n?Math.round(a/n*100):0; }
+  function first(n){ return n; }
+  function hitterRead(H){
+    const r=[];
+    if (H.fp>=2){ if (H.fps/H.fp>=0.5) r.push(`Swings early: went after ${H.fps} of ${H.fp} first pitches.`); else if (H.fps/H.fp<=0.25) r.push(`Takes the first pitch: swung at ${H.fps} of ${H.fp}.`); }
+    if (H.pitches>=8){ const s=H.swings/H.pitches; if(s<=0.3) r.push(`Very patient. Swung at ${H.swings} of ${H.pitches} pitches.`); else if(s>=0.55) r.push(`Aggressive. Swung at ${H.swings} of ${H.pitches} pitches.`); }
+    if (H.whiffs>=3) r.push(`Swings and misses: ${H.whiffs} swinging strikes.`);
+    if (H.kl>=1 && H.kl===H.k) r.push(`${H.kl>1?'Both':'His'} strikeout${H.kl>1?'s were':' was'} looking (ꓘ).`);
+    if (H.bunts) r.push(`Bunted ${H.bunts} time${H.bunts>1?'s':''}.`);
+    if (H.xbh.length) r.push(`Extra-base hits: ${H.xbh.join(', ')}.`);
+    if (!r.length) r.push(`${H.pa.length} plate appearance${H.pa.length>1?'s':''}: ${H.pa.map(p=>p.res).join(', ')}.`);
+    return r.join(' ');
+  }
+  function hitterShade(H,mine){
+    if (!H.bip) return 'No balls in play yet.';
+    const deep = mine.filter(b=>b.d>=0.85).length;
+    let s;
+    if (H.bip>=2 && H.left/H.bip>=0.6) s=`Shade him to the left side. ${H.left} of ${H.bip} balls in play went to third, short or left.`;
+    else if (H.bip>=2 && H.right/H.bip>=0.6) s=`Shade him to the right side. ${H.right} of ${H.bip} balls in play went to first, second or right.`;
+    else s=`Play him straight up. ${H.left} left, ${H.mid} middle, ${H.right} right.`;
+    if (deep) s+=' Play the outfield deep; he has hit it to the fence.';
+    if (H.bunts) s+=' Corners in when he squares.';
+    return s;
+  }
+  function runnerRead(R){
+    if (!R.att) return R.onb ? `Has not run in ${R.onb} time${R.onb>1?'s':''} on base.` : 'No steal attempts.';
+    return `${R.sb} for ${R.att} stealing${R.zero?`, ${R.zero} on the first pitch (0-0)`:''}.`;
+  }
+  function pitcherNote(p){
+    const free=p.bb+p.hbp; const n=[];
+    if (p.bf) { const rate=free/p.bf; if(rate>=0.25) n.push(`Walked or hit ${free} of ${p.bf}.`); else if(rate<=0.1) n.push(`Throws strikes: ${free} free bases in ${p.bf} batters.`); }
+    if (p.bf>=4) n.push(`First-pitch strikes on ${p.firstStrikes} of ${p.bf}.`);
+    if (p.kl>=2 && p.kl>=p.k/2) n.push(`${p.kl} of ${p.k} strikeouts looking.`);
+    if (p.wp) n.push(`${p.wp} wild pitch${p.wp>1?'es':''}.`);
+    return n.join(' ');
+  }
+  function gamePlan(M){
+    const SW=c=>c==='S'||c==='F'||c==='X';
+    const P={plat:[],mound:[],bases:[],hold:[],field:[]};
+    const pas=M.pas; const fp=pas.filter(p=>p.seq.length), fps=fp.filter(p=>SW(p.seq[0])).length;
+    const ps=[]; pas.forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{ps.push({b,s,c,k});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+    const ahead=ps.filter(x=>x.s===0&&x.b>=2), aheadSw=ahead.filter(x=>SW(x.c)).length;
+    const ks=pas.filter(p=>/^(K|ꓘ)/.test(p.res)), kl=pas.filter(p=>/^ꓘ/.test(p.res));
+    const xbh=pas.filter(p=>/^(2B|3B|HR)/.test(p.res));
+    // mound
+    if (fp.length){ const r=fps/fp.length; P.mound.push(r<0.4?`<b>Throw strike one.</b> ${M.opp} swung at ${fps} of ${fp.length} first pitches (${pct(fps,fp.length)}%).`:`<b>Start them off the plate.</b> ${M.opp} swung at ${fps} of ${fp.length} first pitches (${pct(fps,fp.length)}%).`); }
+    if (ahead.length>=3 && aheadSw===0) P.mound.push(`<b>Throw strikes when behind.</b> They never swung at 2-0 or 3-0 (${ahead.length} pitches).`);
+    if (ks.length>=2 && kl.length/ks.length>=0.5) P.mound.push(`<b>Finish on the corners.</b> ${kl.length} of ${ks.length} strikeouts were looking (ꓘ).`);
+    if (pas.length>=10 && ks.length/pas.length<0.15) P.mound.push(`<b>Expect contact.</b> They struck out in ${ks.length} of ${pas.length} plate appearances.`);
+    const xb=[...new Set(xbh.map(p=>p.h))]; if (xb.length) P.mound.push(`<b>Be careful with ${xb.length>1?xb.slice(0,-1).join(', ')+' and '+xb[xb.length-1]:xb[0]}.</b> ${xb.length>1?'They have':'He has'} the extra-base hits.`);
+    // field
+    const bip=M.bip; if (bip.length>=4){ const L=bip.filter(b=>b.a<35).length, R=bip.filter(b=>b.a>55).length;
+      if (L/bip.length>=0.45) P.field.push(`<b>Shade the left side.</b> ${L} of ${bip.length} balls in play went to third, short or left.`);
+      else if (R/bip.length>=0.45) P.field.push(`<b>Shade the right side.</b> ${R} of ${bip.length} balls in play went to first, second or right.`);
+      const g5=bip.filter(b=>/^5-/.test(b.res)||/^FC 5/.test(b.res)).length; if(g5>=3) P.field.push(`<b>Third baseman, expect action.</b> ${g5} outs were ground balls to third.`);
+    }
+    const bunters=Object.values(M.hitters).filter(h=>h.bunts).map(h=>first(h.name)); if (bunters.length) P.field.push(`<b>Corners in when ${bunters.join(' or ')} squares.</b>`);
+    Object.values(M.hitters).filter(h=>h.bip>=3 && (h.left/h.bip>=0.75||h.right/h.bip>=0.75)).forEach(h=>{const L=h.left>h.right; P.field.push(`<b>Shade ${h.name} to the ${L?'left':'right'} side.</b> ${L?h.left:h.right} of ${h.bip} balls in play went there.`);});
+    // hold
+    const st=M.steals; if (st.length){ const z=st.filter(s=>s.cnt==='0-0').length; const runners=Object.values(M.runners).filter(r=>r.att).sort((a,b)=>b.att-a.att);
+      P.hold.push(`<b>${z>st.length/2?'Throw over or pitch out on 0-0':'Hold runners'}</b> with ${runners.slice(0,4).map(r=>first(r.n)).join(', ')} on. ${z} of ${st.length} steal attempts came on the first pitch.`);
+      const sb=st.filter(s=>s.res==='SB').length; P.hold.push(`<b>They are ${sb} for ${st.length} stealing.</b> Catcher, be ready early in the count.`);
+      const non=Object.values(M.runners).filter(r=>!r.att && r.onb>=3); if(non.length){ const nm=non.map(r=>r.n); const list=nm.length>1?nm.slice(0,-1).join(', ')+' or '+nm[nm.length-1]:nm[0]; P.hold.push(`<b>Don’t worry about ${list} at first.</b> ${non.length>1?'None of them has':'He hasn’t'} tried to steal in ${non.reduce((a,r)=>a+r.onb,0)} combined times on base.`);}
+    } else P.hold.push('<b>No steal attempts recorded.</b> Keep normal holds.');
+    // plate / bases vs their pitchers + defense
+    const pit=M.pitchers; const bf=pit.reduce((a,p)=>a+p.bf,0), free=pit.reduce((a,p)=>a+p.bb+p.hbp,0), outs=pit.reduce((a,p)=>a+p.outs,0);
+    if (bf){ if (free/bf>=0.2) P.plat.push(`<b>Take until they throw a strike.</b> Their pitchers walked or hit ${free} of ${bf} batters in ${Math.floor(outs/3)}${outs%3?(outs%3===1?'⅓':'⅔'):''} innings.`);
+      const fs=pit.reduce((a,p)=>a+p.firstStrikes,0); if (fs/bf>=0.6) P.plat.push(`<b>Be ready to swing early.</b> They threw a first-pitch strike to ${fs} of ${bf} batters.`);
+      const best=pit.filter(p=>p.bf>=6).sort((a,b)=>(a.bb+a.hbp+a.h)/a.bf-(b.bb+b.hbp+b.h)/b.bf)[0]; if(best) P.plat.push(`<b>Toughest arm: ${best.n}.</b> ${best.h} hit${best.h===1?'':'s'} and ${best.bb+best.hbp} free bases in ${best.bf} batters.`);
+    }
+    const D=M.defense, att=D.sbAgainst+D.csAgainst;
+    if (att) P.bases.push(`<b>${D.csAgainst? 'Pick your spots' : 'Run freely'}.</b> Opponents are ${D.sbAgainst} for ${att} stealing${D.catcher?` against catcher ${D.catcher}`:''}.`);
+    if (D.wp+D.pb>=2) P.bases.push(`<b>Look for balls in the dirt.</b> ${D.wp} wild pitch${D.wp===1?'':'es'} and ${D.pb} passed ball${D.pb===1?'':'s'}.`);
+    if (D.errors) P.bases.push(`<b>Make them field it.</b> ${D.errors} error${D.errors>1?'s':''}: ${D.oppErrors.map(e=>'E'+e.pos+' '+first(e.who)).join(', ')}.`);
+    Object.keys(P).forEach(k=>{ if(!P[k].length) P[k].push('Not enough data yet. Add another game.'); });
+    return P;
+  }
+
+  return {parseGame, build, ord};
+})();
+if (typeof module!=='undefined') module.exports=ENGINE;
+
+</script>
+<script>
+
+const SID_RE=/AKfyc[A-Za-z0-9_-]{20,}/;
+const SID=(()=>{ const m=(new URLSearchParams(location.search).get('s')||'').match(SID_RE); return m?m[0]:''; })();
+const API=SID?'https://script.google.com/macros/s/'+SID+'/exec':'';
+const HOME=location.pathname+(SID?'?s='+SID:'');
+function dsConnect(){ const inp=document.getElementById('ds-url'), msg=document.getElementById('ds-msg'); const m=(inp&&inp.value||'').match(SID_RE);
+  if(!m){ msg.className='err'; msg.textContent='That isn’t a Web app URL. Copy it from Deploy → Manage deployments in Apps Script. It starts with https://script.google.com/macros/s/ and ends in /exec.'; return; }
+  location.href=location.pathname+'?s='+m[0]; }
+const CACHE='dugoutscout.sheet.v1.'+SID;
+const store={ get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } } };
+const $=s=>document.querySelector(s), app=$('#app'), head=$('#head'), tip=$('#tip');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SW=c=>c==='S'||c==='F'||c==='X';
+let DATA=store.get(CACHE,null);
+let loadState={busy:false,err:'',fresh:false};
+let state={game:'all',hitter:'all',runner:'all'};
+let model=null, modelKey=null;
+const teamName=(new URLSearchParams(location.search).get('team')||'').trim();
+const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function teamObj(){ if(!DATA||!teamName) return null; return DATA.teams.find(t=>norm(t.name)===norm(teamName))||null; }
+function teamLink(name){ return location.origin+HOME+(SID?'&':'?')+'team='+encodeURIComponent(name); }
+function ours(){ return (DATA&&DATA.ours||[]).map(n=>String(n).replace(/\s+/g,' ').trim()); }
+function roster(){ const t=teamObj(); const R={info:{},removed:[],added:[],deleted:[]}; if(!t) return R; const our=new Set(ours().map(n=>n.toLowerCase())); (t.roster||[]).filter(p=>!our.has(p.name.toLowerCase())).forEach(p=>{ R.info[p.name]={num:p.num,pos:p.pos,bats:p.bats,notes:p.notes}; if(p.out) R.removed.push(p.name); else R.added.push(p.name); }); return R; }
+function pinfo(n){ return roster().info[n]||{}; }
+function label(n){ const i=pinfo(n); return (i.num?'#'+i.num+' ':'')+n; }
+function stubHitter(n){ return {name:n,line:'No plate appearances yet',read:'No plate appearances yet.',shade:'No balls in play yet.',pa:[],swings:0,pitches:0,fps:0,fp:0,bip:0}; }
+const LINEKEY='dugoutscout.lineup.v1.'+SID;
+function lineupOf(t){ const all=store.get(LINEKEY,{}); const v=t?all[norm(t.name)]:null; return Array.isArray(v)&&v.length?v:null; }
+function setLineup(t,list){ const all=store.get(LINEKEY,{}); if(list&&list.length) all[norm(t.name)]=list; else delete all[norm(t.name)]; store.set(LINEKEY,all); model=null; }
+function hitterNames(M){ const R=roster(), L=lineupOf(teamObj()); const names=Object.keys(M.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return L?names.filter(n=>L.includes(n)):names; }
+/* everyone available for the lineup picker, in batting order */
+function lineupPool(){ const F=model&&model.full?model.full:model; if(!F) return []; const R=roster(); const names=Object.keys(F.hitters); R.added.forEach(n=>{ if(!names.includes(n)&&!R.removed.includes(n)) names.push(n); }); return names; }
+function lastLineup(){ const F=model&&model.full?model.full:model; if(!F||!F.games.length) return []; const g=F.games[F.games.length-1]; const out=[]; F.pas.filter(p=>p.g===g).forEach(p=>{ if(out.length<9&&!out.includes(p.h)) out.push(p.h); }); return out; }
+let lineupOpen=false;
+function lineupBar(){
+  const t=teamObj(), L=lineupOf(t), pool=lineupPool(); if(!pool.length) return '';
+  const on=n=>!L||L.includes(n);
+  const count=L?L.filter(n=>pool.includes(n)).length:pool.length;
+  const chips=pool.map(n=>`<label class="gchip ${on(n)?'on':''}"><input type="checkbox" data-ltoggle="${esc(n)}" ${on(n)?'checked':''}> ${esc(label(n))}</label>`).join('');
+  return `<details class="lineup" ${lineupOpen?'open':''}><summary><b>Lineup:</b> ${L?`${count} of ${pool.length} hitters`:`Everyone (${pool.length} hitters)`}${L?` <span class="lnames">${L.filter(n=>pool.includes(n)).map(n=>esc(n.split(' ').slice(-1)[0])).join(', ')}</span>`:''}<span class="ledit">${lineupOpen?'Done':'Choose players'}</span></summary>
+  <p class="note" style="margin:6px 0 8px">Check the hitters you expect to face. Hitting tabs, the game plan and the printout focus on them. The Pitchers tab always shows every pitcher.</p>
+  <div class="gpick">${chips}</div><p style="margin:8px 0 0;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-llast>Last game’s lineup</button><button type="button" class="btn sm" data-lall>Everyone</button></p></details>`;
+}
+function hitterOf(M,n){ return M.hitters[n]||stubHitter(n); }
+function gameLabels(t){ const base=t.games.map((g,i)=>(g.label||'').trim()||('G'+(i+1))); const cnt={}; base.forEach(l=>cnt[l]=(cnt[l]||0)+1); const used={}; return base.map((l,i)=>{ let x=l; if(cnt[l]>1){ const d=(t.games[i].date||'').trim(); x=d?l+' ('+d+')':l+' #'+((used[l]=(used[l]||0)+1)); } return x; }); }
+function matchTeam(teams,want){ const w=norm(want); if(!w||!teams.length) return null;
+  const exact=teams.find(x=>norm(x)===w); if(exact) return exact;
+  const inside=teams.filter(x=>norm(x).includes(w)||w.includes(norm(x))); if(inside.length===1) return inside[0];
+  const words=s=>norm(s).split(' ').filter(Boolean);
+  const close=(a,b)=>a===b||(a.length>3&&b.length>3&&(a.slice(0,-2)===b.slice(0,-2)||a.indexOf(b)===0||b.indexOf(a)===0));
+  const score=x=>{ const tw=words(x); return words(want).filter(a=>tw.some(b=>close(a,b))).length; };
+  const ranked=teams.map(x=>({x,s:score(x)})).sort((a,b)=>b.s-a.s);
+  return ranked[0].s>=2&&(ranked.length<2||ranked[0].s>ranked[1].s)?ranked[0].x:null; }
+const SELKEY='dugoutscout.gamesoff.v1.'+SID;
+function offList(t){ const all=store.get(SELKEY,{}); return (all[norm(t.name)]||[]); }
+function setOff(t,list){ const all=store.get(SELKEY,{}); all[norm(t.name)]=list; store.set(SELKEY,all); model=null; }
+function gameKey(g){ return [g.label||'',g.date||'',String(g.text||'').length].join('|'); }
+function selectedIdx(t){ const off=new Set(offList(t)); return t.games.map((g,i)=>off.has(gameKey(g))?-1:i).filter(i=>i>=0); }
+function getModel(){
+  const t=teamObj(); const sel=selectedIdx(t); const L=lineupOf(t); const key=JSON.stringify([t.name,t.games.map(g=>[g.label,g.date,g.text.length]),t.roster,sel,L]);
+  if(model&&modelKey===key) return model;
+  const labels=gameLabels(t), warn=[], parsed=[];
+  t.games.forEach((g,i)=>{ if(!sel.includes(i)) return; const p=ENGINE.parseGame(g.text,labels[i]);
+    if(!p.ok){ warn.push(`<b>${esc(labels[i])}</b>: ${esc(p.error)}`); return; }
+    const m=matchTeam(p.teams,t.name);
+    if(!m){ warn.push(`<b>${esc(labels[i])}</b>: couldn’t find “${esc(t.name)}” in this play-by-play. It has ${p.teams.map(esc).join(' and ')}. Rename this team’s tab in the Google Sheet to match GameChanger.`); return; }
+    p.halves.forEach(h=>{ if(h.bat===m) h.bat=t.name; }); parsed.push(p); });
+  const base=roster().removed.concat(ours());
+  const full=ENGINE.build(parsed,t.name,{exclude:base});
+  if(L){
+    const everyone=new Set(Object.keys(full.hitters).concat(Object.keys(full.runners)));
+    const out=[...everyone].filter(n=>!L.includes(n));
+    const lm=ENGINE.build(parsed,t.name,{exclude:base.concat(out)});
+    lm.pitchers=full.pitchers; lm.defense=full.defense; lm.plan.plat=full.plan.plat; lm.plan.bases=full.plan.bases;
+    model=lm;
+  } else model=full;
+  model.full=full; model.warnings=warn; modelKey=key; return model;
+}
+const gOk=g=>state.game==='all'||state.game===g;
+async function load(){
+  if(!/^https:/.test(API)){ loadState={busy:false,err:'setup',fresh:false}; render(); return; }
+  loadState={busy:true,err:'',fresh:false}; paintStatus();
+  try{ const res=await fetch(API+(API.indexOf('?')>=0?'&':'?')+'t='+Date.now()); const j=await res.json(); if(!j.ok) throw new Error(j.error||'error');
+    DATA={fetched:Date.now(),teams:j.teams||[],ours:j.ours||[],brand:j.brand||null,sheetUrl:j.sheetUrl||''}; store.set(CACHE,DATA); model=null; loadState={busy:false,err:'',fresh:true}; }
+  catch(e){ loadState={busy:false,err:DATA?'offline':'nodata',fresh:false}; }
+  render();
+}
+function when(ts){ const d=new Date(ts), now=new Date(); const t=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); return d.toDateString()===now.toDateString()?t:d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})+' '+t; }
+function statusText(){
+  if(loadState.busy) return 'Getting the latest from the Google Sheet…';
+  if(loadState.err==='setup') return 'Not connected to a Google Sheet yet.';
+  if(loadState.err==='offline') return `<span style="color:#ffd27a">No connection. Showing the copy from ${esc(when(DATA.fetched))}.</span> <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Try again</button>`;
+  if(loadState.err==='nodata') return `<span style="color:#ffb4a6">Couldn’t reach the Google Sheet.</span> <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Try again</button>`;
+  return DATA?`Up to date as of ${esc(when(DATA.fetched))} <button type="button" class="btn ghost" id="reload" style="padding:2px 8px;font-size:13px;margin-left:6px">Refresh</button>`:'';
+}
+/* ---------- branding from the sheet (_Settings): name, colors, logo ---------- */
+const HEXRE=/^#[0-9a-f]{6}$/i;
+const h2r=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const r2h=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const mixc=(a,b,t)=>{ const A=h2r(a),B=h2r(b); return r2h(A.map((v,i)=>v*(1-t)+B[i]*t)); };   // t = amount of b
+const lum=h=>{ const c=h2r(h).map(v=>{ v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; };
+const contrast=(a,b)=>{ const x=lum(a),y=lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+function brandCSS(primary,accent){
+  if(!HEXRE.test(primary||'')) return '';
+  let board=primary; for(let i=0;i<12&&contrast(board,'#ffffff')<5;i++) board=mixc(board,'#000000',.12);
+  const soft=HEXRE.test(accent||'')?accent:mixc(primary,'#ffffff',.55);
+  const dBoard=mixc(primary,'#0b0c0e',.6), dLine=mixc(primary,'#ffffff',.35);
+  const L=`--bg:${mixc(primary,'#f4f5f6',.93)};--panel:${mixc(primary,'#ffffff',.985)};--ink:${mixc(primary,'#1c1e22',.88)};--muted:${mixc(primary,'#5f6368',.85)};--line:${mixc(primary,'#d9dbde',.86)};--soft:${mixc(primary,'#f3f4f5',.93)};--board:${board};--board-ink:#ffffff;--board-muted:${mixc(board,'#ffffff',.75)};--plan-bg:${mixc(primary,'#ffffff',.9)};--plan-line:${board};--plan-head:${board};--chip-on:${board};--chip-on-line:${board};--dc:${board};--dc-soft:${soft}`;
+  const D=`--bg:${mixc(primary,'#141518',.92)};--panel:${mixc(primary,'#1c1d20',.9)};--ink:#dcdee2;--muted:#a3a6ab;--line:${mixc(primary,'#303236',.85)};--soft:${mixc(primary,'#212226',.9)};--board:${dBoard};--board-muted:${mixc(dBoard,'#ffffff',.65)};--plan-bg:${mixc(primary,'#1f2023',.85)};--plan-line:${dLine};--plan-head:${mixc(primary,'#ffffff',.6)};--chip-on:${mixc(primary,'#000000',.35)};--chip-on-line:${dLine};--dc:${mixc(primary,'#000000',.25)}`;
+  return `:root{${L}} @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}} :root[data-theme="dark"]{${D}}
+.brand{color:#fff;display:inline-flex;align-items:center;gap:10px}
+nav.tabs a[aria-current="page"]{border-top-color:var(--dc-soft)}
+.btn.primary{background:var(--dc);color:#fff;border-color:var(--dc)}
+.seg button[aria-pressed="true"]{color:#fff}
+.gchip.on{color:#fff}
+.gchip input{accent-color:${board}}
+.avgb{background:var(--dc);color:#fff}
+#printbar{background:var(--dc);color:#fff}`;
+}
+let brandPreview=null;   // unsaved changes on the Customize screen
+function activeBrand(){ return brandPreview||(DATA&&DATA.brand)||{}; }
+function brandLogo(){ const b=activeBrand(); return b.logo===''&&brandPreview?'':(b.logo||LOGO_SRC); }
+function brandName(){ return (activeBrand().teamName||'').trim()||'Dugout Scout'; }
+let lastIconFor='';
+function applyBrand(){
+  const b=activeBrand(); let el=document.getElementById('brandtheme');
+  if(!el){ el=document.createElement('style'); el.id='brandtheme'; document.head.appendChild(el); }
+  el.textContent=brandCSS(b.primary,b.accent);
+  const meta=document.querySelector('meta[name="theme-color"]'); if(meta&&HEXRE.test(b.primary||'')) meta.content=b.primary;
+  const logo=brandLogo();
+  if(logo&&logo!==lastIconFor&&b.logo){ lastIconFor=logo; const img=new Image(); img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=c.height=180; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,180,180); const s=Math.min(152/img.width,152/img.height); x.drawImage(img,(180-img.width*s)/2,(180-img.height*s)/2,img.width*s,img.height*s); const url=c.toDataURL('image/png');
+      document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(l=>l.href=url); }catch(e){} }; img.src=logo; }
+}
+function paintStatus(){ const el=document.getElementById('status'); if(el){ el.innerHTML=statusText(); const b=document.getElementById('reload'); if(b) b.onclick=()=>load(); } const sw=document.getElementById('teamswitch'); if(sw) sw.onchange=()=>{ if(sw.value) location.href=teamLink(sw.value)+(location.hash&&teamObj()?location.hash:''); }; }
+
+/* ---------- field ---------- */
+const HX=300,HY=470,R=410;
+const pt=(a,d)=>{const t=(135-a)*Math.PI/180;return [HX+R*d*Math.cos(t),HY-R*d*Math.sin(t)];};
+const BASE={0:pt(0,0),1:pt(90,.3),2:pt(45,.4243),3:pt(0,.3),4:pt(0,0)};
+function fieldSVG(inner,label,vb){
+  const [lx,ly]=pt(0,1),[rx,ry]=pt(90,1),[ilx,ily]=pt(0,.55),[irx,iry]=pt(90,.55),[mx,my]=pt(45,.21);
+  const stripes=[.2,.4,.6,.8].map(d=>{const [a,b]=pt(0,d+.1),[c,e]=pt(90,d+.1),[f,g]=pt(0,d),[h,j]=pt(90,d);return `<path d="M${f},${g} A${R*d},${R*d} 0 0 1 ${h},${j} L${c},${e} A${R*(d+.1)},${R*(d+.1)} 0 0 0 ${a},${b} Z" fill="var(--grass2)"/>`}).join('');
+  const bases=[1,2,3].map(b=>{const [x,y]=BASE[b];return `<rect x="${x-7}" y="${y-7}" width="14" height="14" fill="var(--chalk)" transform="rotate(45 ${x} ${y})"/>`}).join('');
+  return `<svg class="field" viewBox="${vb||'0 0 600 500'}" role="img" aria-label="${esc(label)}">
+  <path d="M${HX},${HY} L${lx},${ly} A${R},${R} 0 0 1 ${rx},${ry} Z" fill="var(--grass)"/>${stripes}
+  <path d="M${HX},${HY} L${ilx},${ily} A${R*.55},${R*.55} 0 0 1 ${irx},${iry} Z" fill="var(--dirt)"/><circle cx="${HX}" cy="${HY-6}" r="22" fill="var(--dirt)"/>
+  <path d="M${BASE[0][0]},${BASE[0][1]-30} L${BASE[1][0]-28},${BASE[1][1]} L${BASE[2][0]},${BASE[2][1]+30} L${BASE[3][0]+28},${BASE[3][1]} Z" fill="var(--grass)"/>
+  <circle cx="${mx}" cy="${my}" r="15" fill="var(--dirt)"/>
+  <path d="M${HX},${HY} L${lx},${ly} M${HX},${HY} L${rx},${ry}" stroke="var(--chalk)" stroke-width="2"/>
+  <path d="M${HX},${HY} L${BASE[1][0]},${BASE[1][1]} L${BASE[2][0]},${BASE[2][1]} L${BASE[3][0]},${BASE[3][1]} Z" fill="none" stroke="var(--chalk)" stroke-width="1.5" opacity=".7"/>
+  ${bases}<path d="M${HX-7},${HY-4} h14 v6 l-7,6 l-7,-6 Z" fill="var(--chalk)"/>${inner}</svg>`;
+}
+const LOGO_SRC='data:image/png;base64,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';      // team logo (set per page when built)
+const AVG_EXTRAS=false;   // AVG badge + hits by field direction on spray charts
+function avgBadge(H){ return AVG_EXTRAS&&H&&H.ab?` <span class="avgb" title="Batting average">${esc(H.avgTxt)}</span>`:''; }
+function zoneLabels(list){
+  if(!AVG_EXTRAS||!list.length) return '';
+  const isHit=b=>/^(1B|2B|3B|HR)/.test(b.res);
+  const zones=[['left',b=>b.a<35,21],['middle',b=>b.a>=35&&b.a<=55,45],['right',b=>b.a>55,69]];
+  return zones.map(([nm,f,ang])=>{ const L=list.filter(f); if(!L.length) return ''; const h=L.filter(isHit).length, avg=(h/L.length).toFixed(3).replace(/^0\./,'.');
+    const [x,y]=pt(ang,1.07);
+    return `<g class="zlab" pointer-events="none"><rect x="${x-58}" y="${y-19}" width="116" height="30" rx="6" fill="#26352d" fill-opacity=".9"/><text x="${x}" y="${y+3}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="22" fill="#fbfbf7"><tspan class="zc">${h}/${L.length}</tspan><tspan class="za" fill="#e3bb3d"> ${avg}</tspan></text></g>`; }).join('');
+}
+function sprayField(list,al){
+  const seen=[];
+  const DASH={LD:'',GB:'5 5',FB:'16 7',PU:'16 7',BU:'1.5 5'};
+  const items=list.map(b=>{
+    const k=seen.filter(q=>Math.abs(q.a-b.a)<4&&Math.abs(q.d-b.d)<.06).length; seen.push(b);
+    let [x,y]=pt(b.a,b.d); if(k){x+=[0,15,-15][k%3];y-=Math.floor(k/3)*15;}
+    const col=b.on?'var(--hit)':'#ffffff', edge=b.on?'#5c4600':'#1d3a26';
+    const tl=(b.hard?'Hard-hit ':'')+(({GB:'ground ball',LD:'line drive',FB:'fly ball',PU:'pop-up',BU:'bunt'}[b.type])||'');
+    const d=`M${HX},${HY-6} L${x},${y}`, dash=DASH[b.type]||'';
+    const tipTxt=`<b>${esc(b.h)}</b><br>${esc(b.g)}, ${esc(b.inn)} inning: ${esc(b.res)}<br>${tl}`;
+    return {line:`<path d="${d}" fill="none" stroke="#10241a" stroke-opacity=".55" stroke-width="5" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''}/><path d="${d}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:''} stroke-opacity="${b.on?1:.9}"/><path d="${d}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke" data-tip="${tipTxt}"/>`,
+            dot: b.hard ? `<path d="M${x+10},${y} L${x-6},${y-8} L${x-6},${y+8} Z" transform="rotate(${(Math.atan2(y-(HY-6),x-HX)*180/Math.PI).toFixed(1)} ${x} ${y})" fill="${col}" stroke="${edge}" stroke-width="1.5" stroke-linejoin="round" tabindex="0" data-tip="${tipTxt}"/>` : `<circle cx="${x}" cy="${y}" r="5.5" fill="${col}" stroke="${edge}" stroke-width="1.5" tabindex="0" data-tip="${tipTxt}"/>`};
+  });
+  return fieldSVG(items.map(i=>i.line).join('')+items.map(i=>i.dot).join('')+(al?fielderMarks(al):'')+zoneLabels(list),'Spray chart of balls in play');
+}
+const legend=()=>`<div class="legend" style="align-items:center"><span><i style="background:var(--hit)"></i>Reached base</span><span><i style="background:#fff;border:1px solid #1d3a26"></i>Out</span><span style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Normal contact</span><span style="display:inline-flex;align-items:center;gap:5px"><svg width="16" height="14" aria-hidden="true"><path d="M14,7 L2,1 L2,13 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Hard hit</span>${[['','Line drive'],['5 5','Ground ball'],['16 7','Fly ball or pop-up'],['1.5 5','Bunt']].map(([d,t])=>`<span style="display:inline-flex;align-items:center;gap:6px"><svg width="44" height="10" aria-hidden="true"><line x1="2" y1="5" x2="42" y2="5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" ${d?`stroke-dasharray="${d}"`:''}/></svg>${t}</span>`).join('')}</div>`;
+
+function bindTips(root){
+  root.querySelectorAll('[data-tip]').forEach(el=>{
+    const show=e=>{tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';const r=el.getBoundingClientRect();const x=(e&&e.clientX)||r.left+r.width/2,y=(e&&e.clientY)||r.top;tip.style.left=(Math.max(8,Math.min(x+12,innerWidth-270))+scrollX)+'px';tip.style.top=(y+14+scrollY)+'px';};
+    el.addEventListener('mousemove',show);el.addEventListener('focus',()=>show());
+    el.addEventListener('mouseleave',()=>{ if(!touchMode) tip.style.display='none'; });el.addEventListener('blur',()=>{ if(!touchMode) tip.style.display='none'; });
+    el.addEventListener('click',e=>{e.stopPropagation();show(e);});
+  });
+}
+function gameSeg(M){
+  const t=teamObj(); if(!t) return '';
+  const labels=gameLabels(t), sel=selectedIdx(t);
+  const chips=t.games.map((g,i)=>`<label class="gchip ${sel.includes(i)?'on':''}"><input type="checkbox" data-gtoggle="${i}" ${sel.includes(i)?'checked':''}> ${esc(labels[i])}${g.date&&labels[i].indexOf(g.date)<0?` <small>${esc(g.date)}</small>`:''}</label>`).join('');
+  return `<div class="gpick" role="group" aria-label="Games to include"><span class="gcount">Using ${sel.length} of ${t.games.length} game${t.games.length===1?'':'s'}</span>${chips}${t.games.length>1?`<button type="button" class="btn sm" data-gall>All games</button><button type="button" class="btn sm" data-glatest>Latest only</button>`:''}</div>`;
+}
+function pick(key,list,allLabel,labelText){
+  return `<label>${labelText} <select data-pick="${key}"><option value="all">${allLabel}</option>${list.map(n=>`<option value="${esc(n)}" ${state[key]===n?'selected':''}>${esc(label(n))}</option>`).join('')}</select></label>`;
+}
+const planBox=(t,who,items)=>`<section class="plan" aria-label="Game plan"><h2>${t}</h2>${who?`<p class="who">${who}</p>`:''}<ol>${items.map(i=>`<li>${i}</li>`).join('')}</ol></section>`;
+const pct=(a,n)=>n?Math.round(a/n*100):0;
+
+/* ---------- report views ---------- */
+function viewPlan(M){
+  const bip=M.bip.filter(b=>gOk(b.g)), pas=M.pas.filter(p=>gOk(p.g));
+  const fp=pas.filter(p=>p.seq.length), fps=fp.filter(p=>SW(p.seq[0])).length;
+  const D=M.defense, att=D.sbAgainst+D.csAgainst, free=M.pitchers.reduce((a,p)=>a+p.bb+p.hbp,0), bf=M.pitchers.reduce((a,p)=>a+p.bf,0);
+  return `<div class="layout"><section class="stage"><h2>Where ${esc(M.opp)} puts the ball</h2><p class="note">Every ball in play from ${M.games.length} game${M.games.length>1?'s':''}. Yellow reached base, white was an out. Use the tabs to dig into hitters, counts, running and pitching.</p><div class="filters">${gameSeg(M)}</div>${sprayField(bip)}${legend()}</section>
+  <div class="side">${planBox('At the plate','Facing their pitchers',M.plan.plat)}${planBox('On the mound','Pitching to their hitters',M.plan.mound)}</div></div>
+  <div class="layout"><div class="side">${planBox('On the bases','Running on their defense',M.plan.bases)}${planBox('Holding runners','',M.plan.hold)}</div><div class="side">${planBox('In the field','',M.plan.field)}
+  <section class="card"><h3>At a glance</h3><div class="stats"><div><b>${free} of ${bf}</b><span>batters walked or hit by their pitchers</span></div><div><b>${att?D.sbAgainst+' of '+att:'—'}</b><span>steals allowed</span></div><div><b>${fps} of ${fp.length}</b><span>first pitches their hitters swung at</span></div></div></section></div></div>`;
+}
+function viewSpray(M){
+  const names=hitterNames(M); if(state.hitter!=='all'&&!names.includes(state.hitter)) state.hitter='all'; const h=state.hitter, H=h==='all'?null:hitterOf(M,h);
+  const list=M.bip.filter(b=>gOk(b.g)&&(h==='all'||b.h===h));
+  const L=list.filter(b=>b.a<35).length, Mi=list.filter(b=>b.a>=35&&b.a<=55).length, Rt=list.length-L-Mi, on=list.filter(b=>b.on).length;
+  const pas=M.pas.filter(p=>gOk(p.g)&&(h==='all'||p.h===h));
+  const ALH=h!=='all'&&M.hitters[h]?alignFor(h,M):null;
+  const plan=h==='all'?planBox('Defending '+esc(M.opp),'All hitters',M.plan.field):planBox('Defending '+esc(label(h)),[pinfo(h).pos,pinfo(h).bats?'bats '+pinfo(h).bats:''].filter(Boolean).map(esc).join(', '),[`<b>Alignment:</b> ${callBadges(ALH)}<br><small>${esc(ALH.why.join('; '))}</small>`,`<b>Where to play him:</b> ${esc(H.shade)}`,`<b>His approach:</b> ${esc(H.read)}`].concat(pinfo(h).notes?[`<b>Coach’s notes:</b> ${esc(pinfo(h).notes)}`]:[]));
+  const rows=pas.map(p=>`<tr><td>${esc(p.h)}</td><td>${esc(p.g)}</td><td>${esc(p.inn)}</td><td><span class="tag ${/^(1B|2B|3B|HR|E|BB|IBB|HBP)/.test(p.res)?'on':''}">${esc(p.res)}</span></td><td>${[...p.seq].map(c=>`<span class="tag sm ${SW(c)?'on':''}">${c}</span>`).join(' ')}</td></tr>`).join('');
+  const lines=names.map(n=>{const x=hitterOf(M,n), i=pinfo(n);return `<tr class="pick" data-hitter="${esc(n)}" tabindex="0"><td class="num">${esc(i.num||'')}</td><td>${esc(n)}</td><td>${esc(i.pos||'')}</td><td>${esc(i.bats||'')}</td><td>${esc(x.line)}</td><td class="num"><b>${x.ab?esc(x.avgTxt):'—'}</b></td><td class="num">${x.pa.length}</td><td class="num">${x.pitches?pct(x.swings,x.pitches)+'%':'—'}</td><td class="num">${x.fp?x.fps+' of '+x.fp:'—'}</td><td>${esc(i.notes?x.read+' Notes: '+i.notes:x.read)}</td></tr>`}).join('');
+  return `<div class="layout"><section class="stage"><h2>${h==='all'?esc(M.opp)+' spray chart':esc(label(h))+avgBadge(M.hitters[h])}</h2><p class="note">${list.length} balls in play: ${L} left side, ${Mi} middle, ${Rt} right side. ${on} reached base. Hover or tap a dot for the play.</p>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${h!=='all'?'<button type="button" class="btn" data-allhitters>Show all hitters</button>':''}${gameSeg(M)}</div>${sprayField(list,ALH)}${legend()}<p class="note" style="margin:8px 0 0">${ALH?'Fielder circles show his DC alignment. ':''}Tap or hover over a mark to see the play.</p></section>
+  <div class="side">${plan}${h==='all'?'':`<section class="card"><h3>Line</h3><p style="margin:0;font:700 22px/1.2 'Barlow Condensed',sans-serif">${esc(H.line)}</p></section>`}</div></div>
+  <section class="below"><h2>Hitters</h2>${(()=>{ const hs=names.map(n=>M.hitters[n]).filter(Boolean), H=hs.reduce((a,x)=>a+x.h,0), AB=hs.reduce((a,x)=>a+x.ab,0); return AB?`<p class="note">Team batting average: <b>${(H/AB).toFixed(3).replace(/^0\./,'.')}</b> (${H}-for-${AB}) in the games and lineup selected.</p>`:''; })()}<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Hitter</th><th>Pos.</th><th>Bats</th><th>Line</th><th class="num">AVG</th><th class="num">PA</th><th class="num">Swing %</th><th class="num">1st-pitch swings</th><th>Read</th></tr></thead><tbody>${lines}</tbody></table></div><p class="note" style="margin:8px 0 0">Tap a hitter to see his spray chart.</p></section>
+  <section class="below"><h2>Plate appearances</h2><p class="note">Pitches: B ball, C called strike, S swinging strike, F foul, X in play, H hit by pitch. Yellow letters are swings.</p><div class="tablewrap"><table><thead><tr><th>Hitter</th><th>Game</th><th>Inning</th><th>Result</th><th>Pitches</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No plate appearances for this filter.</td></tr>'}</tbody></table></div></section>`;
+}
+function viewCounts(M){
+  const names=hitterNames(M); if(state.hitter!=='all'&&!names.includes(state.hitter)) state.hitter='all'; const h=state.hitter, P=[];
+  M.pas.filter(p=>gOk(p.g)&&(h==='all'||p.h===h)).forEach(p=>{let b=0,s=0;[...p.seq].forEach((c,k)=>{P.push({b,s,c,k,p});if(c==='B')b++;else if(c==='C'||c==='S'||(c==='F'&&s<2))s++;});});
+  const fp=P.filter(x=>x.k===0),fs=fp.filter(x=>SW(x.c)).length,two=P.filter(x=>x.s===2),ts=two.filter(x=>SW(x.c)).length,ah=P.filter(x=>x.s===0&&x.b>=2),as=ah.filter(x=>SW(x.c)).length;
+  let g='<div class="grid"><div></div>'+[0,1,2,3].map(b=>`<div class="h">${b} ball${b===1?'':'s'}</div>`).join('');
+  for(let s=0;s<3;s++){g+=`<div class="r">${s} strike${s===1?'':'s'}</div>`;for(let b=0;b<4;b++){const L=P.filter(x=>x.b===b&&x.s===s),w=L.filter(x=>SW(x.c)).length,r=L.length?w/L.length:0;
+    const tiles=h==='all'?'':`<div class="tiles">${L.map(x=>`<em class="${SW(x.c)?'sw':''}" title="${esc(x.p.g+' '+x.p.inn)}">${x.c}</em>`).join('')}</div>`;
+    g+=`<div class="cell" style="background:rgba(242,192,20,${(r*0.85).toFixed(2)})"><span>${b}-${s}</span><b>${L.length?pct(w,L.length)+'%':'—'}</b><small>${w} of ${L.length} swung</small>${tiles}</div>`;}}
+  g+='</div>';
+  const items=h==='all'?M.plan.mound:[`<b>First pitch:</b> swung at ${fs} of ${fp.length}. ${fp.length&&fs/fp.length<.4?'Throw a strike to start him.':'He’ll swing early; start him off the plate.'}`,`<b>Two strikes:</b> swung at ${ts} of ${two.length}.`,`<b>His approach:</b> ${esc(hitterOf(M,h).read)}`].concat(pinfo(h).notes?[`<b>Coach’s notes:</b> ${esc(pinfo(h).notes)}`]:[]);
+  return `<div class="layout"><section class="stage"><h2>${h==='all'?'Swing rate by count':esc(label(h))+' by count'}</h2><p class="note">How often they swung in each count. Darker yellow means more swings.${h==='all'?' Pick a hitter to see every pitch he saw.':' Each tile is one pitch; yellow tiles are swings.'}</p>
+  <div class="filters">${pick('hitter',names,'All hitters','Hitter')}${gameSeg(M)}</div>${g}</section>
+  <div class="side">${planBox('Pitching to '+esc(h==='all'?M.opp:label(h)),'',items)}
+  <section class="card"><h3>Key counts</h3><div class="stats"><div><b>${pct(fs,fp.length)}%</b><span>swing on the first pitch (${fs} of ${fp.length})</span></div><div><b>${pct(ts,two.length)}%</b><span>swing with two strikes</span></div><div><b>${as} of ${ah.length}</b><span>swings at 2-0 and 3-0</span></div></div></section></div></div>`;
+}
+function viewRunning(M){
+  if(state.runner!=='all'&&!M.runners[state.runner]) state.runner='all';
+  const r=state.runner, list=M.steals.filter(s=>gOk(s.g)&&(r==='all'||s.r===r));
+  const groups={}; list.forEach(s=>{(groups[s.from+'-'+s.to]=groups[s.from+'-'+s.to]||[]).push(s);});
+  const [mdx,mdy]=pt(45,.21);
+  const arrows=Object.values(groups).map(gr=>{
+    const [x1,y1]=BASE[gr[0].from],[x2,y2]=BASE[gr[0].to]; const cx=(x1+x2)/2,cy=(y1+y2)/2; let nx=cx-mdx,ny=cy-mdy; const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    const paths=gr.map((s,i)=>{const bend=14+i*7,qx=cx+nx*bend,qy=cy+ny*bend,col=s.res==='SB'?'var(--hit)':'var(--cs)';
+      return `<path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" marker-end="url(#ah-${s.res})"/><path d="M${x1},${y1} Q${qx},${qy} ${x2},${y2}" fill="none" stroke="transparent" stroke-width="18" pointer-events="stroke" tabindex="0" data-tip="<b>${esc(s.r)}</b><br>${esc(s.g)} ${esc(s.inn)}: ${s.res==='SB'?'stole':'caught stealing'} ${['','','2nd','3rd','home'][s.to]}<br>Count ${s.cnt}, ran on: ${esc(s.pitch.toLowerCase())}<br>${s.outs} out, ${esc(s.bat)} batting"/>`;}).join('');
+    const zero=gr.filter(s=>s.cnt==='0-0').length, l1=`${gr.length} attempt${gr.length>1?'s':''} to ${['','','2nd','3rd','home'][gr[0].to]}`, l2=zero===gr.length?(gr.length>1?'all on 0-0':'on 0-0'):'counts '+gr.map(s=>s.cnt).join(', ');
+    const lx=cx+nx*(26+gr.length*6), ly=cy+ny*(26+gr.length*6);
+    return paths+`<text x="${lx}" y="${ly}" text-anchor="${nx>0?'start':'end'}" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="17" fill="var(--chalk)" stroke="var(--grass)" stroke-width="3" paint-order="stroke">${l1}<tspan x="${lx}" dy="17" font-weight="600" font-size="15">${esc(l2)}</tspan></text>`;
+  }).join('');
+  const defs=`<defs>${['SB','CS'].map(k=>`<marker id="ah-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--${k==='SB'?'hit':'cs'})"/></marker>`).join('')}</defs>`;
+  const sb=list.filter(s=>s.res==='SB').length, z=list.filter(s=>s.cnt==='0-0').length;
+  const R=Object.values(M.runners).sort((a,b)=>b.att-a.att||(b.onb||0)-(a.onb||0));
+  const rows=R.map(x=>`<tr class="pick" data-runner="${esc(x.n)}" tabindex="0"><td>${esc(x.n)}</td><td class="num">${x.onb==null?'—':x.onb}</td><td class="num">${x.att}</td><td class="num">${x.sb}</td><td class="num">${x.cs}</td><td class="num">${x.zero}</td><td>${esc(x.read)}</td></tr>`).join('');
+  const other=M.other.filter(o=>gOk(o.g)&&(r==='all'||o.r===r)).map(o=>`<li>${esc(o.g)} ${esc(o.inn)}, ${esc(o.r)}: ${esc(o.play)}</li>`).join('');
+  const plan=r==='all'?planBox('Holding their runners','',M.plan.hold):planBox('Holding '+esc(r),'',[`<b>Tendency:</b> ${esc((M.runners[r]||{read:'No attempts.'}).read)}`,list.length?`<b>When he runs:</b> ${list.map(s=>s.cnt).join(', ')}. Throw over before the first pitch.`:'<b>No steal attempts.</b> Focus on the hitter.']);
+  return `<div class="layout"><section class="stage"><h2>${r==='all'?'Steal attempts':esc(r)}</h2><p class="note">${list.length} attempt${list.length===1?'':'s'}: ${sb} stolen, ${list.length-sb} caught, ${z} on the first pitch (0-0). Yellow arrows are steals, red is caught stealing.</p>
+  <div class="filters">${pick('runner',R.map(x=>x.n),'All runners','Runner')}${gameSeg(M)}</div>${fieldSVG(defs+arrows,'Steal attempts drawn between bases','20 215 560 290')}</section>
+  <div class="side">${plan}${other?`<section class="card"><h3>Other running plays</h3><ul style="margin:0;padding-left:18px">${other}</ul></section>`:''}</div></div>
+  <section class="below"><h2>Runners</h2><div class="tablewrap"><table><thead><tr><th>Runner</th><th class="num">On base</th><th class="num">Attempts</th><th class="num">SB</th><th class="num">CS</th><th class="num">Ran on 0-0</th><th>Read</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No runners yet.</td></tr>'}</tbody></table></div><p class="note" style="margin:8px 0 0">Click a runner to show his attempts. Steals are logged on the pitch listed just before them in the play-by-play.</p></section>`;
+}
+function viewPitchers(M){
+  const list=M.pitchers.filter(p=>gOk(p.g)), D=M.defense, att=D.sbAgainst+D.csAgainst;
+  const bars=list.map(p=>{const v=(p.bb+p.hbp)/p.bf;return `<div><span>${esc(p.n)} <small style="color:var(--muted)">${esc(p.g)}</small></span><span class="track"><span class="fill ${v<.2?'ok':''}" style="width:${Math.min(100,Math.round(v/.6*100))}%"></span></span><b>${p.bb+p.hbp} of ${p.bf}</b></div>`}).join('');
+  const rows=list.map(p=>`<tr><td>${esc(p.g)}</td><td>${esc(p.n)}</td><td class="num">${p.ip}</td><td class="num">${p.bf}</td><td class="num">${p.pitches}</td><td class="num">${p.h}</td><td class="num">${p.r}</td><td class="num">${p.bb}</td><td class="num">${p.hbp}</td><td class="num">${p.k}</td><td class="num">${p.wp}</td><td>${esc(p.note)}</td></tr>`).join('');
+  return `<div class="layout"><section class="stage"><h2>Free bases by pitcher</h2><p class="note">Walks plus hit batters out of batters faced. Green is under one in five.</p><div class="filters">${gameSeg(M)}</div><div class="bars">${bars||'<p class="empty">No pitching data.</p>'}</div></section>
+  <div class="side">${planBox('Hitting against '+esc(M.opp),'',M.plan.plat)}${planBox('Running on their defense','',M.plan.bases)}
+  <section class="card"><h3>Their defense</h3><div class="stats"><div><b>${att?D.sbAgainst+' of '+att:'—'}</b><span>steals allowed${D.catcher?', catcher '+esc(D.catcher):''}</span></div><div><b>${D.wp+D.pb}</b><span>wild pitches and passed balls</span></div><div><b>${D.errors}</b><span>errors</span></div></div></section></div></div>
+  <section class="below"><h2>Pitching lines</h2><div class="tablewrap"><table><thead><tr><th>Game</th><th>Pitcher</th><th class="num">IP</th><th class="num">BF</th><th class="num">Pitches</th><th class="num">H</th><th class="num">R</th><th class="num">BB</th><th class="num">HBP</th><th class="num">K</th><th class="num">WP</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note" style="margin:8px 0 0">R counts every run that scored while he was pitching. K includes called third strikes (ꓘ).</p></section>`;
+}
+
+
+
+/* ---------- roster (read-only, from the sheet) ---------- */
+function viewRoster(M){
+  const t=teamObj(), R=roster();
+  const found=[...new Set(Object.keys(M.hitters).concat(M.pitchers.map(p=>p.n),Object.keys(M.runners)))];
+  const all=found.concat(R.added.filter(n=>!found.includes(n))).concat(R.removed.filter(n=>!found.includes(n)&&!R.added.includes(n)));
+  const pit={}; M.pitchers.forEach(p=>{ (pit[p.n]=pit[p.n]||[]).push(p.ip+' IP ('+p.g+')'); });
+  const rows=all.map(n=>{ const i=R.info[n]||{}, out=R.removed.includes(n), H=M.hitters[n];
+    const what=[H?`${H.pa.length} PA, ${H.line}`:'', pit[n]?'Pitched '+pit[n].join(', '):''].filter(Boolean).join(' · ')||(out?'Left out of the report':'No plays yet');
+    return `<tr style="${out?'opacity:.55':''}"><td class="num">${esc(i.num||'')}</td><td><b>${esc(n)}</b></td><td>${esc(i.pos||'')}</td><td>${esc(i.bats||'')}</td><td>${esc(i.notes||'')}</td><td>${out?'No':'Yes'}</td><td style="font-size:14px;color:var(--muted)">${esc(what)}</td></tr>`; }).join('');
+  return `<section class="below"><h2>Roster</h2><p class="note">Numbers, positions, bats, notes, and who’s left out come from the roster columns (F–K) on this team’s tab in the Google Sheet. Change them there and this page updates the next time it’s opened.${DATA&&DATA.sheetUrl?` <a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">Open the Google Sheet</a> (coaches with edit access).`:''}</p>
+  <div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Player</th><th>Pos.</th><th>Bats</th><th>Coach’s notes</th><th>In report</th><th>From the games</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No players yet.</td></tr>'}</tbody></table></div></section>`;
+}
+/* ---------- home: list of teams ---------- */
+function viewHome(){
+  if(loadState.err==='setup') return `<section class="card" style="margin-top:24px"><h2>Connect your Google Sheet</h2><p>Paste your sheet’s Web app URL. You get it in your copy of the sheet under Extensions → Apps Script → Deploy → Manage deployments.</p>
+  <p style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0"><input id="ds-url" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1 1 320px;min-width:0;padding:10px 12px;font:inherit;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit" onkeydown="if(event.key==='Enter')dsConnect()"><button type="button" class="btn primary" onclick="dsConnect()">Open my page</button></p>
+  <p id="ds-msg" class="note" style="margin:10px 0 0">You’ll land on your team’s own page. Bookmark it, add it to your home screen, and send that link to your coaches.</p></section>`;
+  if(!DATA) return `<section class="card" style="margin-top:24px"><h2>${loadState.busy?'Loading…':'Can’t reach the Google Sheet'}</h2><p class="note">${loadState.busy?'Getting your scouting reports.':'Check your connection and tap Try again at the top.'}</p></section>`;
+  const want=teamName&&!teamObj()?`<section class="card" style="margin-top:24px"><p class="err" style="margin:0">No team named “${esc(teamName)}” is in the Google Sheet. It may have been renamed or removed. Pick a team below.</p></section>`:'';
+  const cards=DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<article class="report"><h3>${esc(t.name)}</h3><span class="note">${t.games.length} game${t.games.length===1?'':'s'}${t.games.length?': '+t.games.map(g=>esc(g.label||'')+(g.date?' ('+esc(g.date)+')':'')).join(', '):''}</span>
+    <div class="actions"><a class="btn primary" href="${esc(teamLink(t.name))}">Open report</a></div></article>`).join('');
+  return `${want}<div class="layout" style="grid-template-columns:1fr"><section class="stage"><h2>Scouting reports</h2><p class="note">Every team tab in your Google Sheet. Pick one to open its report. New games and new teams show up here automatically.</p>
+  <p style="margin:0 0 14px"><button type="button" class="btn" id="sharesite">Share Dugout Scout with coaches</button></p>
+  <div class="reports">${cards||'<p class="empty">No teams yet. In the Google Sheet, use Dugout Scout → New team or Add a game.</p>'}</div><p id="copymsg" class="note" style="margin:10px 0 0"></p></section>
+  <section class="card"><h2>Adding games</h2><p class="note" style="margin:0">Open the Google Sheet${DATA.sheetUrl?` (<a href="${esc(DATA.sheetUrl)}" target="_blank" rel="noopener">link</a>)`:''} and use <b>Dugout Scout → Add a game</b>. Pick the team (or type a new one) and paste the play-by-play. Each team has its own tab. Coaches see new games the next time they open the site.</p></section></div>`;
+}
+/* ---------- shell ---------- */
+/* ---------- DC defensive alignment from spray data ---------- */
+const IF_CALLS={
+  SQUARE:{name:'SQUARE',what:'Neutral / 5 over',sign:'Chest'},
+  RECTANGLE:{name:'RECTANGLE',what:'Shift 1B/3B +1',sign:'Wave arm'},
+  U:{name:'U',what:'Extended shift',sign:'Field goal'},
+  DIAMOND:{name:'DIAMOND',what:'Shallow',sign:'In front of face'}
+};
+const OF_CALLS={
+  RED:{name:'RED',what:'Pull: pull-side OF deep on the line, opposite OF shallow up, CF in the pull gap',col:'#c4573f'},
+  BLUE:{name:'BLUE',what:'Straight up, deep: LF/RF on the baselines',col:'#3f66b8'},
+  GREEN:{name:'GREEN',what:'Neutral: CF shades pull side of 2B, LF/RF middle-middle',col:'#3f8a55'},
+  YELLOW:{name:'YELLOW',what:'Shallow up: LF/RF middle-middle',col:'#b8901f'}
+};
+function batsOf(n){ const b=String(pinfo(n).bats||'').trim().toUpperCase(); return (b==='R'||b==='L'||b==='S')?b:''; }
+function alignFor(n,M){
+  const list=M.bip.filter(x=>x.h===n), bats=batsOf(n);
+  const onLeft=x=>x.a<35, onRight=x=>x.a>55;
+  // pull/oppo only when Bats is filled in (R or L). Otherwise describe by side of the field.
+  const tagOf=side=>bats==='R'?(side==='left'?'pull':'oppo'):bats==='L'?(side==='right'?'pull':'oppo'):'';
+  const sideWords=side=>side==='left'?'left side':'right side';
+  const ground=list.filter(x=>x.type==='GB'||(x.type!=='BU'&&x.d<0.5));
+  const air=list.filter(x=>(x.type==='LD'||x.type==='FB'||x.type==='PU')&&x.d>=0.55);
+  const bunts=list.filter(x=>x.type==='BU').length;
+  const xbh=list.filter(x=>/^(2B|3B|HR)/.test(x.res)).length, hard=list.filter(x=>x.hard).length;
+  const why=[]; let inf='SQUARE', infSide='', of='GREEN', ofSide='';
+  const nG=ground.length, gl=ground.filter(onLeft).length, gr=ground.filter(onRight).length, gTop=Math.max(gl,gr), gSide=gl>=gr?'left':'right';
+  const gTag=tagOf(gSide);
+  if(nG>=4&&gTop/nG>=0.8&&gTag!=='oppo'){ inf='U'; infSide=gSide; }
+  else if(nG>=3&&gTop/nG>=0.65){ inf='RECTANGLE'; infSide=gSide; }
+  else if(list.length>=4&&!air.length&&!hard&&!xbh){ inf='DIAMOND'; why.push(`nothing in the air to the OF in ${list.length} balls in play`); }
+  if(infSide) why.push(`${gTop}/${nG} grounders to the ${sideWords(infSide)}${gTag?' ('+gTag+')':''}`);
+  else if(inf==='SQUARE'&&nG&&list.length>=3) why.push(`grounders spread (${gl} left, ${nG-gl-gr} middle, ${gr} right)`);
+  const nA=air.length, al=air.filter(onLeft).length, ar=air.filter(onRight).length, aTop=Math.max(al,ar), aSide=al>=ar?'left':'right';
+  if(nA>=3&&aTop/nA>=0.6){ of='RED'; ofSide=aSide; why.push(`${aTop}/${nA} OF balls to the ${sideWords(aSide)}${tagOf(aSide)?' ('+tagOf(aSide)+')':''}`); }
+  else if(xbh>=2||(xbh>=1&&hard>=1)){ of='BLUE'; why.push(`${xbh} extra-base hit${xbh===1?'':'s'}${hard?', '+hard+' hard-hit':''}`); }
+  else if((list.length>=4&&nA===0)||(nA>=2&&!xbh&&air.every(x=>x.d<0.85))){ of='YELLOW'; if(inf!=='DIAMOND') why.push(nA?`${nA} OF balls, all shallow`:`no balls in the air to the OF`); }
+  const small=list.length<3;
+  if(small) why.unshift(list.length?`only ${list.length} ball${list.length===1?'':'s'} in play, start neutral`:`no balls in play yet, start neutral`);
+  if(bunts) why.push(`bunted ${bunts}x`);
+  return {n,bats,inf,infSide,side:infSide?(infSide==='left'?'3B side':'1B side'):'',infTag:infSide?tagOf(infSide):'',of,ofSide,ofTag:ofSide?tagOf(ofSide):'',bunt:bunts>0,bunts,small,why,count:list.length};
+}
+function ofLabel(al){ if(al.of!=='RED') return ''; return al.ofTag?(al.ofTag==='pull'?' · pull':' · oppo'):(al.ofSide==='left'?' · LF side':' · RF side'); }
+function fielderSpots(al){
+  const mir=(side,a)=>side==='right'?90-a:a;      // left-side templates, mirrored for the right side
+  let inf;
+  if(al.inf==='U') inf=[['3B',8,.4],['SS',20,.55],['2B',40,.53],['1B',64,.47]].map(x=>[x[0],mir(al.infSide,x[1]),x[2]]);
+  else if(al.inf==='RECTANGLE') inf=[['3B',8,.4],['SS',22,.5],['2B',52,.5],['1B',72,.45]].map(x=>[x[0],mir(al.infSide,x[1]),x[2]]);
+  else { const d=al.inf==='DIAMOND'?-.06:0; inf=[['3B',12,.4+d],['SS',30,.52+d],['2B',60,.52+d],['1B',80,.42+d]]; }
+  if(al.infSide==='right') inf=inf.map(x=>x[0]==='3B'?['1B',x[1],x[2]]:x[0]==='1B'?['3B',x[1],x[2]]:x[0]==='SS'?['2B',x[1],x[2]]:x[0]==='2B'?['SS',x[1],x[2]]:x);
+  if(al.bunt) inf=inf.map(x=>x[0]==='3B'||x[0]==='1B'?[x[0],x[1],.26]:x);
+  const cfShade=al.bats==='R'?40:al.bats==='L'?50:45;   // GREEN: CF shades pull side only when Bats is known
+  let off={BLUE:[['LF',22,.92],['CF',45,.95],['RF',68,.92]],GREEN:[['LF',20,.8],['CF',cfShade,.85],['RF',70,.8]],YELLOW:[['LF',22,.7],['CF',45,.74],['RF',68,.7]]}[al.of];
+  if(al.of==='RED'){ off=[['LF',12,.9],['CF',33,.86],['RF',70,.7]]; if(al.ofSide==='right') off=off.map(x=>[x[0]==='LF'?'RF':x[0]==='RF'?'LF':x[0],90-x[1],x[2]]); }
+  return inf.concat(off);
+}
+function fielderMarks(al){
+  return fielderSpots(al).map(([lab,a,d])=>{ const [x,y]=pt(a,d); return `<g pointer-events="none"><circle cx="${x}" cy="${y}" r="11" fill="#fbfbf7" fill-opacity=".92" stroke="#26352d" stroke-width="1.5"/><text x="${x}" y="${y+3.5}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11" fill="#26352d">${lab}</text></g>`; }).join('');
+}
+function callBadges(al){
+  const o=OF_CALLS[al.of];
+  return `<span class="call">${IF_CALLS[al.inf].name}${al.side?' · '+al.side:''}</span> <span class="call of" style="--c:${o.col}">${o.name}${ofLabel(al)}</span>${al.bunt?' <span class="call">VERTICAL LINE</span>':''}`;
+}
+function viewAlign(M){
+  const names=hitterNames(M).filter(n=>M.hitters[n]);
+  const rows=names.map(n=>{ const al=alignFor(n,M), i=pinfo(n), I=IF_CALLS[al.inf], O=OF_CALLS[al.of];
+    return `<tr class="pick" data-hitter-open="${esc(n)}" tabindex="0"><td class="num">${esc(i.num||'')}</td><td><b>${esc(n)}</b>${i.pos?` <small style="color:var(--muted)">${esc(i.pos)}</small>`:''}</td>
+      <td>${al.bats?esc(al.bats):'<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="call">${I.name}</span>${al.side?` <small>${al.side}</small>`:''}<br><small style="color:var(--muted)">${I.what} · sign: ${I.sign}</small></td>
+      <td><span class="call of" style="--c:${O.col}">${O.name}${ofLabel(al)}</span>${al.of==='RED'?`<br><small style="color:var(--muted)">shade toward the ${al.ofSide==='left'?'LF':'RF'} line</small>`:''}</td>
+      <td>${al.bunt?`<span class="call">VERTICAL LINE</span><br><small style="color:var(--muted)">bunted ${al.bunts}x · corners in</small>`:'<small style="color:var(--muted)">—</small>'}</td>
+      <td style="font-size:14px">${al.small?'<b>Small sample.</b> ':''}${esc(al.why.join('; ')||'Not enough data')}</td></tr>`; }).join('');
+  const missing=names.filter(n=>!batsOf(n));
+  return `<section class="below"><h2>Alignment card</h2><p class="note">DC infield and outfield calls for each hitter, from his spray chart (the games and lineup you’ve selected). Tap a hitter to see the positions drawn on his chart.</p>
+  <div class="filters">${gameSeg(M)}</div>
+  ${missing.length?`<p class="note" style="border-left:3px solid var(--hit);padding-left:8px"><b>No Bats yet for ${missing.length} hitter${missing.length===1?'':'s'}:</b> ${missing.map(esc).join(', ')}. Their calls use the side of the field he hits to. Add R / L / S in the Bats column of the Google Sheet to see pull and opposite-field calls.</p>`:''}
+  <div class="tablewrap"><table class="aligntable"><thead><tr><th class="num">#</th><th>Hitter</th><th>Bats</th><th>Infield</th><th>Outfield</th><th>Bunt</th><th>Why</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No hitters for this selection.</td></tr>'}</tbody></table></div></section>
+  <div class="layout"><section class="card"><h3>Infield calls</h3><ul style="margin:0;padding-left:18px;font-size:15px">
+    <li><b>U</b> (field goal): extended shift, 80%+ of grounders to one side (not used for opposite-field hitters).</li>
+    <li><b>RECTANGLE</b> (wave arm): shift 1B/3B +1, 65%+ of grounders to one side.</li>
+    <li><b>DIAMOND</b> (in front of face): shallow, weak contact with nothing driven to the OF.</li>
+    <li><b>SQUARE</b> (chest): neutral / 5 over, everyone else.</li>
+    <li><b>VERTICAL LINE</b>: corners in for hitters who bunt.</li></ul>
+    <h3 style="margin-top:12px">Outfield colors</h3><ul style="margin:0;padding-left:18px;font-size:15px">
+    <li><b style="color:#c4573f">RED</b>: 60%+ of balls in the air to one side. Shows <b>pull</b> or <b>oppo</b> when Bats is filled in, otherwise <b>LF side</b> or <b>RF side</b>.</li>
+    <li><b style="color:#3f66b8">BLUE</b>: extra-base power, straight up and deep.</li>
+    <li><b style="color:#b8901f">YELLOW</b>: doesn’t drive it, shallow up.</li>
+    <li><b style="color:#3f8a55">GREEN</b>: neutral, everyone else.</li></ul></section>
+  <section class="card"><h3>Situations (call these yourself)</h3><ul style="margin:0;padding-left:18px;font-size:15px">
+    <li>Runner on 1st, less than 2 outs: <b>TRIANGLE</b> (DP depth), or <b>FIST</b> if he’s a shift hitter.</li>
+    <li>Runner on 3rd, need the out at home: <b>X</b> (infield in) or <b>HORIZONTAL LINE</b> (infield halfway).</li>
+    <li>Late, protecting a lead: <b>CIRCLE</b> (no 2B’s).</li>
+    <li>Bunt coverage: runner on 1st, Play 1 or 2; runner on 2nd, Plays 3–7.</li></ul></section></div>`;
+}
+/* ---------- Customize: logo, colors, team name ---------- */
+let custLogo=null;   // undefined = keep, '' = remove, data URL = new
+function isSettingsView(){ const h=(location.hash||'').slice(1); return h==='settings'||h==='customize'; }
+function viewCustomize(){
+  if(loadState.err==='setup') return `<section class="card" style="margin-top:24px"><h2>Customize</h2><p>Connect this page to a Google Sheet first.</p></section>`;
+  const b=activeBrand(), saved=(DATA&&DATA.brand)||{};
+  const pc=HEXRE.test(b.primary||'')?b.primary:'#2c4337', ac=HEXRE.test(b.accent||'')?b.accent:'#e3bb3d';
+  const logo=custLogo===''?'':(custLogo||brandLogo());
+  return `<div class="layout"><section class="stage"><h2>Logo &amp; colors</h2>
+  <p class="note">Changes preview right away on this screen. Tap <b>Save for everyone</b> to put them on every coach’s screen. Saving needs the <b>Edit PIN</b> from the <b>_Settings</b> tab of the Google Sheet.</p>
+  <div class="custgrid">
+    <label>Team name<input type="text" id="cu-name" maxlength="60" value="${esc(b.teamName||'')}" placeholder="Dugout Scout"></label>
+    <label>Main color<span class="colorrow"><input type="color" id="cu-primary" value="${pc}"><input type="text" id="cu-primary-t" value="${HEXRE.test(b.primary||'')?b.primary:''}" placeholder="default" maxlength="7"></span></label>
+    <label>Accent color <small>(optional)</small><span class="colorrow"><input type="color" id="cu-accent" value="${ac}"><input type="text" id="cu-accent-t" value="${HEXRE.test(b.accent||'')?b.accent:''}" placeholder="automatic" maxlength="7"></span></label>
+    <div><span class="lbl">Logo</span><div class="logobox">${logo?`<img src="${esc(logo)}" alt="Logo preview">`:'<span class="note" style="margin:0">No logo</span>'}</div>
+      <p style="margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap"><label class="btn" style="cursor:pointer">Choose image<input type="file" id="cu-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>${logo?'<button type="button" class="btn" id="cu-nologo">Remove logo</button>':''}</p>
+      <p class="note" style="margin:6px 0 0">PNG with a see-through background looks best. It’s resized automatically.</p></div>
+    <label>Edit PIN<input type="password" id="cu-pin" autocomplete="off" placeholder="From the _Settings tab"></label>
+  </div>
+  <p style="margin:16px 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn primary" id="cu-save">Save for everyone</button><button type="button" class="btn" id="cu-reset">Reset to default look</button><a class="btn" href="${esc(HOME)}" id="cu-cancel">Cancel</a><span id="cu-msg"></span></p>
+  ${saved&&saved.canEdit===false?'<p class="note" style="border-left:3px solid var(--cs);padding-left:8px;margin-top:12px"><b>No Edit PIN is set yet.</b> Open the Google Sheet, go to the <b>_Settings</b> tab, and type a PIN next to Edit PIN. Then come back here and save.</p>':''}
+  </section>
+  <section class="card"><h3>Good to know</h3><ul style="margin:0;padding-left:18px;font-size:15px">
+    <li>The site builds every shade from your main color, including dark mode. Very light colors are darkened in the header so white text stays readable.</li>
+    <li>Spray chart, field and alignment colors never change, so the charts always mean the same thing.</li>
+    <li>You can also change these in the Google Sheet’s <b>_Settings</b> tab. The logo can be a Google Drive link.</li>
+    <li>Coaches who added the site to their home screen should re-add it to get the new icon.</li></ul></section></div>`;
+}
+function wireCustomize(){
+  const val=id=>document.getElementById(id);
+  const cur=()=>({ teamName:val('cu-name').value.trim(), primary:HEXRE.test(val('cu-primary-t').value.trim())?val('cu-primary-t').value.trim():'', accent:HEXRE.test(val('cu-accent-t').value.trim())?val('cu-accent-t').value.trim():'', logo: custLogo===undefined||custLogo===null?((DATA&&DATA.brand&&DATA.brand.logo)||''):custLogo });
+  const preview=()=>{ brandPreview=cur(); applyBrand(); const nm=document.querySelector('.brand span'); if(nm) nm.textContent=brandName(); const im=document.querySelector('.brand img'); const lg=brandLogo(); if(im&&lg) im.src=lg; };
+  val('cu-name').oninput=preview;
+  [['cu-primary','cu-primary-t'],['cu-accent','cu-accent-t']].forEach(([c,t])=>{
+    val(c).oninput=()=>{ val(t).value=val(c).value; preview(); };
+    val(t).oninput=()=>{ const v=val(t).value.trim(); if(HEXRE.test(v)) val(c).value=v; preview(); };
+  });
+  val('cu-file').onchange=()=>{ const f=val('cu-file').files[0]; if(!f) return; const msg=val('cu-msg');
+    const rd=new FileReader(); rd.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=360, s=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height); custLogo=c.toDataURL('image/png'); brandPreview=Object.assign(cur(),{logo:custLogo}); render(); }; img.onerror=()=>{ msg.className='err'; msg.textContent='That file isn’t an image the browser can read.'; }; img.src=rd.result; }; rd.readAsDataURL(f); };
+  const nl=val('cu-nologo'); if(nl) nl.onclick=()=>{ custLogo=''; brandPreview=Object.assign(cur(),{logo:''}); render(); };
+  val('cu-reset').onclick=()=>{ val('cu-name').value=''; val('cu-primary-t').value=''; val('cu-accent-t').value=''; custLogo=''; brandPreview={teamName:'',primary:'',accent:'',logo:''}; render(); const m=val('cu-msg'); m.className='note'; m.textContent='Default look shown. Tap Save for everyone to keep it.'; };
+  val('cu-cancel').onclick=()=>{ brandPreview=null; custLogo=null; };
+  val('cu-save').onclick=async()=>{ const msg=val('cu-msg'), pin=val('cu-pin').value.trim();
+    if(!pin){ msg.className='err'; msg.textContent='Enter the Edit PIN first.'; return; }
+    const c=cur(); const body={action:'saveBrand',pin,teamName:c.teamName,primary:c.primary,accent:c.accent};
+    if(custLogo==='') body.logo=''; else if(custLogo&&custLogo.indexOf('data:image/')===0) body.logo=custLogo;
+    msg.className='note'; msg.textContent='Saving…'; val('cu-save').disabled=true;
+    try{ const res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}); const j=await res.json();
+      if(!j.ok) throw new Error(j.error||'Could not save.');
+      DATA.brand=j.brand; store.set(CACHE,DATA); brandPreview=null; custLogo=null; msg.className='ok'; msg.textContent='Saved. Every coach will see it the next time they open the site.'; applyBrand(); renderHead('plan',null); }
+    catch(e){ msg.className='err'; msg.textContent=(e.message||'Could not save.')+(/PIN|_Settings/.test(e.message||'')?'':' If this keeps happening, make sure the newest Apps Script is deployed.'); }
+    finally{ val('cu-save').disabled=false; } };
+}
+const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,sprays:viewSprayGrid,align:viewAlign,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
+/* ---------- all spray charts at once ---------- */
+function viewSprayGrid(M){
+  const names=hitterNames(M), L=lineupOf(teamObj());
+  const cards=names.map(n=>{ const H=hitterOf(M,n), i=pinfo(n), list=M.bip.filter(b=>b.h===n);
+    const lf=list.filter(b=>b.a<35).length, rt=list.filter(b=>b.a>55).length, md=list.length-lf-rt;
+    return `<article class="hcard scard" data-hitter-open="${esc(n)}" tabindex="0" aria-label="Open ${esc(n)}"><h3>${esc(label(n))}${avgBadge(M.hitters[n])}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
+      <p class="ln">${esc(H.line)}</p>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}
+      <p class="note" style="margin:4px 0 0">${list.length} in play${list.length?`: ${lf} left · ${md} middle · ${rt} right`:''}</p>${M.hitters[n]?`<p style="margin:6px 0 0">${callBadges(alignFor(n,M))}</p>`:''}${(()=>{ const nt=String(i.notes||'').trim()||(M.hitters[n]?H.read:''); return nt?`<p class="snote"><b>${i.notes?'Notes':'Approach'}:</b> ${esc(nt)}</p>`:''; })()}</article>`; }).join('');
+  return `<section class="below"><h2>Spray charts</h2><p class="note">${L?'Every hitter in your lineup':'Every hitter'} at once, from the games you’ve selected. Tap a chart to open that hitter. Tap a line or dot to see the play.</p>
+  <div class="filters">${gameSeg(M)}</div>${legend()}<div class="hcards sgrid" style="margin-top:12px">${cards||'<p class="empty">No hitters for this selection.</p>'}</div></section>`;
+}
+/* ---------- printable report ---------- */
+function viewPrint(M){
+  const keep=Object.assign({},state); state={game:'all',hitter:'all',runner:'all'};
+  const t=teamObj(), R=roster();
+  const names=hitterNames(M).filter(n=>M.hitters[n]);
+  const cards=names.map(n=>{ const H=M.hitters[n], i=R.info[n]||{}; const list=M.bip.filter(b=>b.h===n);
+    return `<article class="hcard"><h3>${esc(label(n))}${i.pos?` <span style="font-weight:500;font-size:14px">${esc(i.pos)}${i.bats?' · bats '+esc(i.bats):''}</span>`:''}</h3>
+      <p class="ln">${esc(H.line)}</p><p style="margin:4px 0 0">${callBadges(alignFor(n,M))}</p>
+      <p class="hc-t"><b>Approach:</b> ${esc(H.read)}</p><p class="hc-t"><b>Play him:</b> ${esc(H.shade)}</p>${i.notes?`<p class="hc-t"><b>Notes:</b> ${esc(i.notes)}</p>`:''}<div class="hc-lines" style="display:none">${'<i></i>'.repeat(10)}</div></article>`; });
+  const cardPages=[]; for(let k=0;k<cards.length;k+=9) cardPages.push(cards.slice(k,k+9).join(''));
+  const nH=Math.max(1,names.length);
+  // choose the column count that makes each chart as large as possible on one letter page (7.6in x 8.75in usable)
+  let cols=2, best=0; for(let c=2;c<=6;c++){ const r=Math.ceil(nH/c), w=(7.6-(c-1)*0.07)/c-0.12, h=(8.75/r-0.95)*1.2, size=Math.min(w,h); if(size>best+0.01){ best=size; cols=c; } }
+  const rows=Math.ceil(nH/cols);
+  const minis=names.map(n=>{ const H=M.hitters[n], list=M.bip.filter(b=>b.h===n);
+    const note=String(pinfo(n).notes||'').trim()||H.read||'';
+    return `<div class="mcard"><div class="mh"><b>${esc(label(n))}</b>${avgBadge(H)} <span>${esc(H.line)}</span></div>${list.length?sprayField(list):'<div class="nobip">No balls in play</div>'}<div class="mc">${callBadges(alignFor(n,M))}</div>${note?`<div class="mn">${esc(note)}</div>`:''}</div>`; }).join('');
+  const onePage=`<div class="print-page sprayone" style="--cols:${cols};--rows:${rows}"><section class="below"><h2>Spray charts</h2><p class="note">Solid = line drive · short dashes = ground ball · long dashes = fly/pop · dots = bunt · yellow = reached · white = out · triangle = hard hit</p><div class="mgrid">${minis}</div></section></div>`;
+  const strip=html=>html.replace(/<section class="below"><h2>Plate appearances<\/h2>[\s\S]*?<\/section>/,'');
+  const out=`<div id="printbar"><b>Printable report</b><span>Your print screen opens automatically. Choose <b>Save as PDF</b> for a file, or pick a printer. On iPad: Share → Save to Files.</span><button type="button" class="btn" id="printnow">Print / Save PDF</button><a class="btn" href="#plan">Back to report</a></div>
+  <p class="note" style="margin:10px 0 0">Printed ${esc(new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}))} · ${(()=>{ const sel=selectedIdx(t), L=gameLabels(t); return `${sel.length} game${sel.length===1?'':'s'}${sel.length<t.games.length?' (of '+t.games.length+')':''}: ${sel.map(i=>esc(L[i])).join(', ')}`; })()}</p>
+  ${lineupOf(t)?`<p class="note" style="margin:2px 0 0">Lineup: ${hitterNames(M).map(n=>esc(label(n))).join(', ')}</p>`:''}
+  <div class="print-page first">${viewPlan(M)}</div>
+  ${onePage}
+  ${cardPages.map((html,k)=>`<div class="print-page hcpage"><section class="below"><h2>Hitter cards${cardPages.length>1?` (${k+1} of ${cardPages.length})`:''}</h2><p class="note">Approach, where to play him, alignment calls and notes for each hitter. Charts are on the Spray charts page.</p><div class="hcards hc9">${html}</div></section></div>`).join('')}
+  <div class="print-page">${viewAlign(M)}</div>
+  <div class="print-page">${strip(viewSpray(M))}</div>
+  <div class="print-page">${viewCounts(M)}</div>
+  <div class="print-page">${viewRunning(M)}</div>
+  <div class="print-page">${viewPitchers(M)}</div>`;
+  state=keep; return out;
+}
+let printedFor='';
+function renderHead(v,t){
+  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['align','Alignment'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
+  const labels=t?gameLabels(t):[];
+  head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(HOME)}">${brandLogo()?`<img class="brandlogo" src="${esc(brandLogo())}" alt="">`:''}<span>${esc(brandName())}</span></a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(HOME)}">Scouting reports</a><a class="btn ghost" href="#settings"${isSettingsView()?' aria-current="page"':''}>Settings</a></div></div>
+  ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:(isSettingsView()?`<h1>Settings</h1><p class="sub">Logo, colors and team name for this site.</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`)}
+  <div id="status" class="sub" style="margin-top:6px;font-size:14px"></div>
+  ${t?`<nav class="tabs" aria-label="Report sections">${tabs.map(([k,x])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${x}</a>`).join('')}</nav>`:'<div style="height:18px"></div>'}`;
+  paintStatus();
+}
+function render(){
+  const rawv=(location.hash||'').slice(1);
+  let v=rawv; if(!REPORT_VIEWS[v]) v='plan';
+  applyBrand();
+  const t=isSettingsView()?null:teamObj(); renderHead(v,t);
+  let html='';
+  if(isSettingsView()) html=viewCustomize();
+  else if(!t) html=viewHome();
+  else if(!t.games.length) html=`<section class="card" style="margin-top:24px"><h2>No games yet</h2><p>Add a game for ${esc(t.name)} in the Google Sheet, then open this link again.</p></section>`;
+  else { try{ const M=getModel(); if(state.game!=='all'&&!M.games.includes(state.game)) state.game='all';
+      html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+(v==='roster'?'':`<div style="margin-top:16px">${lineupBar()}</div>`)+REPORT_VIEWS[v](M); }
+    catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
+  app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
+  tip.style.display='none'; bindTips(app); wire(v);
+  if(isSettingsView()&&document.getElementById('cu-save')) wireCustomize();
+  const lb=app.querySelector('details.lineup'); if(lb) lb.ontoggle=()=>{ lineupOpen=lb.open; const e=lb.querySelector('.ledit'); if(e) e.textContent=lb.open?'Done':'Choose players'; };
+  app.querySelectorAll('[data-ltoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(), pool=lineupPool(); let L=lineupOf(t)||pool.slice(); const n=c.dataset.ltoggle;
+    if(c.checked){ if(!L.includes(n)) L.push(n); } else { if(L.filter(x=>pool.includes(x)).length<=1){ c.checked=true; return; } L=L.filter(x=>x!==n); }
+    const all=pool.every(x=>L.includes(x)); setLineup(t, all?null:pool.filter(x=>L.includes(x))); render(); });
+  app.querySelectorAll('[data-lall]').forEach(b=>b.onclick=()=>{ setLineup(teamObj(),null); render(); });
+  app.querySelectorAll('[data-llast]').forEach(b=>b.onclick=()=>{ const L=lastLineup(); if(L.length) setLineup(teamObj(),L); render(); });
+  if(v==='print'&&t&&t.games.length){ const pb=$('#printnow'); if(pb) pb.onclick=()=>window.print(); const key=t.name; if(printedFor!==key){ printedFor=key; setTimeout(()=>{ try{ window.print(); }catch(e){} },700); } }
+  else printedFor='';
+}
+function wire(v){
+  app.querySelectorAll('[data-gtoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(); if(!t) return; const g=t.games[+c.dataset.gtoggle]; const k=gameKey(g); let off=offList(t).filter(x=>t.games.some(y=>gameKey(y)===x));
+      if(c.checked) off=off.filter(x=>x!==k); else { if(selectedIdx(t).length<=1){ c.checked=true; return; } off.push(k); } setOff(t,off); render(); });
+  app.querySelectorAll('[data-gall]').forEach(b=>b.onclick=()=>{ const t=teamObj(); setOff(t,[]); render(); });
+  app.querySelectorAll('[data-glatest]').forEach(b=>b.onclick=()=>{ const t=teamObj(); const last=t.games.length-1; setOff(t,t.games.filter((g,i)=>i!==last).map(gameKey)); render(); });
+  app.querySelectorAll('[data-pick]').forEach(s=>s.onchange=()=>{state[s.dataset.pick]=s.value;render();});
+  app.querySelectorAll('[data-allhitters]').forEach(b=>b.onclick=()=>{state.hitter='all';render();});
+  app.querySelectorAll('[data-hitter-open]').forEach(c=>{ const go=()=>{ state.hitter=c.dataset.hitterOpen; location.hash='#spray'; scrollTo({top:0}); }; c.onclick=go; c.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
+  app.querySelectorAll('tr[data-runner]').forEach(t=>{const go=()=>{state.runner=t.dataset.runner;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  app.querySelectorAll('tr[data-hitter]').forEach(t=>{const go=()=>{state.hitter=t.dataset.hitter;render();scrollTo({top:0,behavior:'smooth'});};t.onclick=go;t.onkeydown=e=>{if(e.key==='Enter')go();};});
+  const ss=$('#sharesite'); if(ss) ss.onclick=async()=>{ const link=location.origin+HOME, msg=$('#copymsg');
+    if(navigator.share&&touchMode){ try{ await navigator.share({title:'Dugout Scout',url:link}); return; }catch(e){} }
+    let ok=false; try{ await navigator.clipboard.writeText(link); ok=true; }catch(e){}
+    msg.className=ok?'ok':'note'; msg.innerHTML=ok?`Copied. That one link opens every scouting report, now and for the rest of the season.`:`Copy this link: <span style="user-select:all;word-break:break-all">${esc(link)}</span>`; };
+}
+
+let touchMode=false;
+addEventListener('pointerdown',e=>{ touchMode = e.pointerType!=='mouse'; },true);
+addEventListener('touchstart',()=>{ touchMode=true; },{capture:true,passive:true});
+addEventListener('click',()=>{ tip.style.display='none'; });
+
+
+render(); load();
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && !loadState.busy && (!DATA || Date.now()-DATA.fetched>30000)) load(); });
+addEventListener('online',()=>load());
+addEventListener('hashchange',render);
+</script>
+</body>
+</html>
