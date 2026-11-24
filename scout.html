@@ -1027,7 +1027,7 @@ function viewCustomize(){
   const pc=HEXRE.test(b.primary||'')?b.primary:'#2c4337', ac=HEXRE.test(b.accent||'')?b.accent:'#e3bb3d';
   const logo=custLogo===''?'':(custLogo||brandLogo());
   return `<div class="layout"><section class="stage"><h2>Logo &amp; colors</h2>
-  <p class="note">Changes preview right away on this screen. Tap <b>Save for everyone</b> to put them on every coach’s screen. Saving needs the <b>Edit PIN</b> from the <b>_Settings</b> tab of the Google Sheet.</p>
+  <p class="note">Changes preview right away on this screen. Tap <b>Save for everyone</b> to put them on every coach’s screen. Saving needs the <b>Branding PIN</b> from the <b>_Settings</b> tab of the Google Sheet.</p>
   <div class="custgrid">
     <label>Team name<input type="text" id="cu-name" maxlength="60" value="${esc(b.teamName||'')}" placeholder="Dugout Scout"></label>
     <label>Main color<span class="colorrow"><input type="color" id="cu-primary" value="${pc}"><input type="text" id="cu-primary-t" value="${HEXRE.test(b.primary||'')?b.primary:''}" placeholder="default" maxlength="7"></span></label>
@@ -1035,10 +1035,10 @@ function viewCustomize(){
     <div><span class="lbl">Logo</span><div class="logobox">${logo?`<img src="${esc(logo)}" alt="Logo preview">`:'<span class="note" style="margin:0">No logo</span>'}</div>
       <p style="margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap"><label class="btn" style="cursor:pointer">Choose image<input type="file" id="cu-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>${logo?'<button type="button" class="btn" id="cu-nologo">Remove logo</button>':''}</p>
       <p class="note" style="margin:6px 0 0">PNG with a see-through background looks best. It’s resized automatically.</p></div>
-    <label>Edit PIN<input type="password" id="cu-pin" autocomplete="off" placeholder="From the _Settings tab"></label>
+    <label>Branding PIN<input type="password" id="cu-pin" autocomplete="off" placeholder="From the _Settings tab"></label>
   </div>
   <p style="margin:16px 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn primary" id="cu-save">Save for everyone</button><button type="button" class="btn" id="cu-reset">Reset to default look</button><a class="btn" href="${esc(location.pathname)}" id="cu-cancel">Cancel</a><span id="cu-msg"></span></p>
-  ${saved&&saved.canEdit===false?'<p class="note" style="border-left:3px solid var(--cs);padding-left:8px;margin-top:12px"><b>No Edit PIN is set yet.</b> Open the Google Sheet, go to the <b>_Settings</b> tab, and type a PIN next to Edit PIN. Then come back here and save.</p>':''}
+  ${saved&&saved.canEdit===false?'<p class="note" style="border-left:3px solid var(--cs);padding-left:8px;margin-top:12px"><b>No Branding PIN is set yet.</b> Open the Google Sheet, go to the <b>_Settings</b> tab, and type a PIN next to Branding PIN. Then come back here and save.</p>':''}
   </section>
   <section class="card"><h3>Good to know</h3><ul style="margin:0;padding-left:18px;font-size:15px">
     <li>The site builds every shade from your main color, including dark mode. Very light colors are darkened in the header so white text stays readable.</li>
@@ -1061,7 +1061,7 @@ function wireCustomize(){
   val('cu-reset').onclick=()=>{ val('cu-name').value=''; val('cu-primary-t').value=''; val('cu-accent-t').value=''; custLogo=''; brandPreview={teamName:'',primary:'',accent:'',logo:''}; render(); const m=val('cu-msg'); m.className='note'; m.textContent='Default look shown. Tap Save for everyone to keep it.'; };
   val('cu-cancel').onclick=()=>{ brandPreview=null; custLogo=null; };
   val('cu-save').onclick=async()=>{ const msg=val('cu-msg'), pin=val('cu-pin').value.trim();
-    if(!pin){ msg.className='err'; msg.textContent='Enter the Edit PIN first.'; return; }
+    if(!pin){ msg.className='err'; msg.textContent='Enter the Branding PIN first.'; return; }
     const c=cur(); const body={action:'saveBrand',pin,teamName:c.teamName,primary:c.primary,accent:c.accent};
     if(custLogo==='') body.logo=''; else if(custLogo&&custLogo.indexOf('data:image/')===0) body.logo=custLogo;
     msg.className='note'; msg.textContent='Saving…'; val('cu-save').disabled=true;
@@ -1084,10 +1084,10 @@ function viewDefense(){
   const bar=editing?`<div class="defbar"><b>Editing the playbook</b>
       <span class="seg" role="group" aria-label="What dragging does"><button type="button" data-dmode="start" aria-pressed="${defMode==='start'}">Move players</button><button type="button" data-dmode="to" aria-pressed="${defMode==='to'}">Draw where they go</button></span>
       <button type="button" class="btn sm" id="def-clear">Clear arrows on…</button>
-      <input type="password" id="def-pin" placeholder="Edit PIN" autocomplete="off" style="width:110px">
+      <input type="password" id="def-pin" placeholder="Playbook PIN" autocomplete="off" style="width:120px">
       <button type="button" class="btn primary" id="def-save">Save for everyone</button><button type="button" class="btn" id="def-cancel">Cancel</button><button type="button" class="btn" id="def-reset">Reset to defaults</button><span id="def-msg"></span></div>
       <p class="note" style="margin:8px 0 0">${defMode==='start'?'Drag any player to his starting spot.':'Drag from a player to draw an arrow to where he goes. Drag him back onto himself to remove the arrow.'} Text changes are kept as you type. Nothing changes for other coaches until you tap Save.</p>`
-    :`<p style="margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn primary" id="def-edit">Edit playbook</button><span class="note" style="margin:0">Saving changes needs the Edit PIN from the sheet’s _Settings tab.</span></p>`;
+    :`<p style="margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn primary" id="def-edit">Edit playbook</button><span class="note" style="margin:0">Saving changes needs the Playbook PIN from the sheet’s _Settings tab.</span></p>`;
   const sections=DEF_GROUPS.map(([g,title,hint])=>{ const list=pb[g]||[];
     const cards=list.map((it,i)=>{
       const notes=String(it.notes||'').split('\n').filter(Boolean);
@@ -1127,7 +1127,7 @@ function wireDefense(){
     }; });
   });
   q('#def-save').onclick=async()=>{ const msg=q('#def-msg'), pin=q('#def-pin').value.trim();
-    if(!pin){ msg.className='err'; msg.textContent='Enter the Edit PIN first.'; return; }
+    if(!pin){ msg.className='err'; msg.textContent='Enter the Playbook PIN first.'; return; }
     msg.className='note'; msg.textContent='Saving…'; q('#def-save').disabled=true;
     try{ const res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveDefense',pin,defense:defEdit})}); const j=await res.json();
       if(!j.ok) throw new Error(j.error||'Could not save.');
