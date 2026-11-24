@@ -162,6 +162,21 @@ footer{color:var(--muted);font-size:14px;margin-top:28px}
 .sprayone .mc .call{font-size:12px;padding:0 5px}
 .sprayone .mn{font-size:12px;line-height:1.3;color:var(--ink);margin-top:3px}
 .snote{margin:6px 0 0;font-size:13px;line-height:1.35}
+.pbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.pbcard{border:1px solid var(--line);background:var(--panel);padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.pbcard h3{margin:0;font:600 20px/1.15 "Barlow Condensed",sans-serif}
+.pbcard h3 small{font:500 14px/1 "Source Sans 3",sans-serif;color:var(--muted)}
+.pbwhat{margin:0;font-size:14px;color:var(--muted)}
+.pbnotes{margin:4px 0 0;padding-left:18px;font-size:14px;line-height:1.35}
+.pbnotes li{margin:0 0 3px}
+.pbcard.editing label{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:600;color:var(--muted)}
+.pbcard.editing input[type=text],.pbcard.editing textarea{min-width:0;width:100%;font:15px/1.35 "Source Sans 3",sans-serif;color:var(--ink)}
+.pbcard.editing input[type=color]{width:60px;height:34px;padding:2px}
+.pbcard.editing .pbdia{outline:2px dashed var(--plan-line);outline-offset:-2px}
+.pbdrag{cursor:grab}
+svg.field g.pbdrag,svg.field g.pbdrag circle{pointer-events:auto}
+svg.field g.pbdrag text{pointer-events:none}
+.defbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--plan-bg);border-left:4px solid var(--plan-line);padding:10px 12px}
 .custgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .custgrid label,.custgrid .lbl{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
 .custgrid input[type=text],.custgrid input[type=password]{min-width:0;width:100%}
@@ -665,7 +680,7 @@ async function load(){
   if(!/^https:/.test(API)){ loadState={busy:false,err:'setup',fresh:false}; render(); return; }
   loadState={busy:true,err:'',fresh:false}; paintStatus();
   try{ const res=await fetch(API+(API.indexOf('?')>=0?'&':'?')+'t='+Date.now()); const j=await res.json(); if(!j.ok) throw new Error(j.error||'error');
-    DATA={fetched:Date.now(),teams:j.teams||[],ours:j.ours||[],brand:j.brand||null,sheetUrl:j.sheetUrl||''}; store.set(CACHE,DATA); model=null; loadState={busy:false,err:'',fresh:true}; }
+    DATA={fetched:Date.now(),teams:j.teams||[],ours:j.ours||[],brand:j.brand||null,defense:j.defense||null,sheetUrl:j.sheetUrl||''}; store.set(CACHE,DATA); model=null; loadState={busy:false,err:'',fresh:true}; }
   catch(e){ loadState={busy:false,err:DATA?'offline':'nodata',fresh:false}; }
   render();
 }
@@ -885,18 +900,53 @@ function viewHome(){
 }
 /* ---------- shell ---------- */
 /* ---------- DC defensive alignment from spray data ---------- */
-const IF_CALLS={
-  SQUARE:{name:'SQUARE',what:'Neutral / 5 over',sign:'Chest'},
-  RECTANGLE:{name:'RECTANGLE',what:'Shift 1B/3B +1',sign:'Wave arm'},
-  U:{name:'U',what:'Extended shift',sign:'Field goal'},
-  DIAMOND:{name:'DIAMOND',what:'Shallow',sign:'In front of face'}
-};
-const OF_CALLS={
-  RED:{name:'RED',what:'Pull: pull-side OF deep on the line, opposite OF shallow up, CF in the pull gap',col:'#c4573f'},
-  BLUE:{name:'BLUE',what:'Straight up, deep: LF/RF on the baselines',col:'#3f66b8'},
-  GREEN:{name:'GREEN',what:'Neutral: CF shades pull side of 2B, LF/RF middle-middle',col:'#3f8a55'},
-  YELLOW:{name:'YELLOW',what:'Shallow up: LF/RF middle-middle',col:'#b8901f'}
-};
+/* ---------- Defensive playbook (editable on the Defense tab, saved in the sheet) ---------- */
+const POS9=['P','C','1B','2B','SS','3B','LF','CF','RF'];
+function defDefault(){
+  const P=(a,d)=>pt(a,d).map(v=>Math.round(v));
+  const BASEPOS={P:P(45,.21),C:[300,488],'1B':P(80,.42),'2B':P(60,.52),SS:P(30,.52),'3B':P(10,.42),LF:P(20,.8),CF:P(45,.85),RF:P(70,.8)};
+  const pos=o=>{ const r=JSON.parse(JSON.stringify(BASEPOS)); Object.entries(o||{}).forEach(([k,[a,d]])=>{ r[k]=P(a,d); }); return r; };
+  const item=(id,name,what,extra)=>Object.assign({id,name,what,sign:'',color:'',notes:'',pos:pos(),to:{}},extra||{});
+  const bunt=(id,name,notes,start,to)=>{ const it=item(id,name,'',{notes}); it.pos=pos(start); const T={}; Object.entries(to).forEach(([k,[a,d]])=>{ T[k]=k==='C'?[300,438]:P(a,d); }); it.to=T; return it; };
+  const backups={P:[45,.13],C:[45,0],LF:[4,.55],CF:[45,.6],RF:[86,.55]};
+  return {
+    infield:[
+      item('SQUARE','SQUARE','Neutral / 5 over',{sign:'Chest',pos:pos({'3B':[12,.4],SS:[30,.52],'2B':[60,.52],'1B':[80,.42]})}),
+      item('RECTANGLE','RECTANGLE','Shift 1B/3B +1 (pull hitter tendency)',{sign:'Wave arm',pos:pos({'3B':[8,.4],SS:[22,.5],'2B':[52,.5],'1B':[72,.45]})}),
+      item('U','U','Extended shift (selling out to dead pull)',{sign:'Field goal',pos:pos({'3B':[8,.4],SS:[20,.55],'2B':[40,.53],'1B':[64,.47]})}),
+      item('DIAMOND','DIAMOND','Shallow',{sign:'In front of face',pos:pos({'3B':[12,.34],SS:[30,.46],'2B':[60,.46],'1B':[80,.36]})}),
+      item('VERTICAL','VERTICAL LINE','Corners in',{sign:'Vertical line',pos:pos({'3B':[12,.26],'1B':[78,.26]})})
+    ],
+    outfield:[
+      item('RED','RED','Pull: pull-side OF deep on the line, opposite OF shallow up, CF in the pull gap',{color:'#c4573f',pos:pos({LF:[12,.9],CF:[33,.86],RF:[70,.7]})}),
+      item('BLUE','BLUE','Straight up, deep: LF/RF on the baselines',{color:'#3f66b8',pos:pos({LF:[22,.92],CF:[45,.95],RF:[68,.92]})}),
+      item('GREEN','GREEN','Neutral: CF shades pull side of 2B, LF/RF middle-middle',{color:'#3f8a55',pos:pos({LF:[20,.8],CF:[45,.85],RF:[70,.8]})}),
+      item('YELLOW','YELLOW','Shallow up: LF/RF middle-middle',{color:'#b8901f',pos:pos({LF:[22,.7],CF:[45,.74],RF:[68,.7]})})
+    ],
+    situations:[
+      item('TRIANGLE','TRIANGLE','Double play depth',{sign:'Triangle / teepee',pos:pos({'3B':[10,.4],SS:[32,.45],'2B':[58,.45],'1B':[82,.4]})}),
+      item('FIST','FIST','DP depth with shift',{sign:'Fist',pos:pos({'3B':[8,.38],SS:[24,.45],'2B':[50,.45],'1B':[72,.42]})}),
+      item('X','X','Infield in',{sign:'X with arms',pos:pos({'3B':[10,.3],SS:[32,.33],'2B':[58,.33],'1B':[80,.3]})}),
+      item('HORIZONTAL','HORIZONTAL LINE','Infield halfway',{sign:'Horizontal line',pos:pos({'3B':[11,.35],SS:[31,.42],'2B':[59,.42],'1B':[79,.35]})}),
+      item('CIRCLE','CIRCLE','No 2B’s',{sign:'Circle',pos:pos({'3B':[4,.4],'1B':[86,.4],LF:[14,.95],CF:[45,.98],RF:[76,.95]})})
+    ],
+    bunts:[
+      bunt('b1','Runner @ 1B – Play 1','3B/P cover 3B. 3B breaks only if hitter shows bunt.\n1B covers 1st; 2B is the secondary cover.\nSS covers 2B.',{},Object.assign({'3B':[12,.2],SS:[45,.4],'2B':[82,.33]},backups)),
+      bunt('b2','Runner @ 1B – Play 2','3B/P cover 3B. 3B aggressive creep: should be at 45’ by the time the pitch is delivered.\n1B covers 1st; 2B is the secondary cover.\nSS covers 2B.',{'3B':[12,.3]},Object.assign({'3B':[14,.17],SS:[45,.4],'2B':[82,.33]},backups)),
+      bunt('b3','Runner @ 2B – Play 3','SS will always try to stop the runner’s feet.\n3B stays home unless the ball is firm or on the line.\n2B breaks only if the hitter shows bunt.\n1B breaks only if the hitter shows bunt.',{},Object.assign({SS:[38,.47],'1B':[74,.2],'2B':[88,.31]},backups)),
+      bunt('b4','Runner @ 2B – Play 4','SS will always try to stop the runner’s feet.\n3B stays home unless the ball is firm or on the line.\n2B breaks and covers 1B.\n1B aggressive creep: should be at 45’ by the time the pitch is delivered.',{'1B':[80,.3]},Object.assign({SS:[38,.47],'1B':[72,.16],'2B':[88,.31]},backups)),
+      bunt('b4db','Runner @ 2B – Play 4 w/ Drive Back (DB)','Spin move pick followed by an aggressive hold by SS/P. Wait until the runner takes a step back to deliver the pitch.\nSS will always try to stop the runner’s feet.\n3B stays home unless the ball is firm or on the line.\n2B breaks and covers 1B.\n1B breaks as soon as the pitcher starts his delivery.',{},Object.assign({SS:[40,.44],'1B':[72,.16],'2B':[88,.31]},backups)),
+      bunt('b5','Runner @ 2B – Play 5','SS breaks when the pitcher comes set (walk into it to create space between you and the runner).\n3B breaks as soon as SS breaks toward 3B.\n2B breaks as soon as SS breaks toward 3B and takes the throw.\n1B breaks as soon as SS breaks toward 3B.\nCorners need aggressive bunt calls!',{},Object.assign({SS:[2,.3],'3B':[14,.17],'2B':[88,.31],'1B':[72,.16]},backups)),
+      bunt('b6','Runner @ 2B – Play 6 (timing pick w/ 2B)','SS breaks when the pitcher comes set.\n3B breaks as soon as SS breaks toward 3B. 1B breaks as soon as SS breaks toward 3B.\nP comes set and picks up the catcher. 2B breaks to the bag when SS breaks to 3B. When the catcher drops his hand, P picks to 2B.\nAggressive bunt calls – sell it!',{},Object.assign({SS:[2,.3],'3B':[14,.17],'1B':[72,.16],'2B':[45,.4]},backups)),
+      bunt('b7','Runner @ 2B – Play 7 (timing pick to 1B)','SS breaks when the pitcher comes set.\n3B breaks as soon as SS breaks toward 3B.\n2B breaks as soon as SS breaks toward 3B and takes the throw.\n1B breaks as soon as SS breaks, then after 2 steps retreats back to 1B. At that time P picks to 1B (RH goes off the catcher’s hand drop; LH can leg-lift pick or quick pick).',{},Object.assign({SS:[2,.3],'3B':[14,.17],'2B':[88,.31],'1B':[89,.3]},backups))
+    ]
+  };
+}
+let _pbDefault=null;
+function PB(){ const d=DATA&&DATA.defense; if(d&&Array.isArray(d.infield)&&Array.isArray(d.outfield)) return d; return _pbDefault||(_pbDefault=defDefault()); }
+function pbItem(group,id){ const g=PB()[group]||[]; return g.find(x=>x.id===id)||(defDefault()[group]||[]).find(x=>x.id===id)||{id,name:id,what:'',sign:'',color:'#666',pos:{},to:{}}; }
+function ifCall(id){ const it=pbItem('infield',id); return {name:it.name,what:it.what,sign:it.sign}; }
+function ofCall(id){ const it=pbItem('outfield',id); return {name:it.name,what:it.what,col:it.color||'#666'}; }
 function batsOf(n){ const b=String(pinfo(n).bats||'').trim().toUpperCase(); return (b==='R'||b==='L'||b==='S')?b:''; }
 function alignFor(n,M){
   const list=M.bip.filter(x=>x.h===n), bats=batsOf(n);
@@ -927,28 +977,34 @@ function alignFor(n,M){
 }
 function ofLabel(al){ if(al.of!=='RED') return ''; return al.ofTag?(al.ofTag==='pull'?' · pull':' · oppo'):(al.ofSide==='left'?' · LF side':' · RF side'); }
 function fielderSpots(al){
-  const mir=(side,a)=>side==='right'?90-a:a;      // left-side templates, mirrored for the right side
-  let inf;
-  if(al.inf==='U') inf=[['3B',8,.4],['SS',20,.55],['2B',40,.53],['1B',64,.47]].map(x=>[x[0],mir(al.infSide,x[1]),x[2]]);
-  else if(al.inf==='RECTANGLE') inf=[['3B',8,.4],['SS',22,.5],['2B',52,.5],['1B',72,.45]].map(x=>[x[0],mir(al.infSide,x[1]),x[2]]);
-  else { const d=al.inf==='DIAMOND'?-.06:0; inf=[['3B',12,.4+d],['SS',30,.52+d],['2B',60,.52+d],['1B',80,.42+d]]; }
-  if(al.infSide==='right') inf=inf.map(x=>x[0]==='3B'?['1B',x[1],x[2]]:x[0]==='1B'?['3B',x[1],x[2]]:x[0]==='SS'?['2B',x[1],x[2]]:x[0]==='2B'?['SS',x[1],x[2]]:x);
-  if(al.bunt) inf=inf.map(x=>x[0]==='3B'||x[0]==='1B'?[x[0],x[1],.26]:x);
-  const cfShade=al.bats==='R'?40:al.bats==='L'?50:45;   // GREEN: CF shades pull side only when Bats is known
-  let off={BLUE:[['LF',22,.92],['CF',45,.95],['RF',68,.92]],GREEN:[['LF',20,.8],['CF',cfShade,.85],['RF',70,.8]],YELLOW:[['LF',22,.7],['CF',45,.74],['RF',68,.7]]}[al.of];
-  if(al.of==='RED'){ off=[['LF',12,.9],['CF',33,.86],['RF',70,.7]]; if(al.ofSide==='right') off=off.map(x=>[x[0]==='LF'?'RF':x[0]==='RF'?'LF':x[0],90-x[1],x[2]]); }
-  return inf.concat(off);
+  const inf=pbItem('infield',al.inf), off=pbItem('outfield',al.of);
+  const swapIF={'3B':'1B','1B':'3B','SS':'2B','2B':'SS'}, swapOF={LF:'RF',RF:'LF',CF:'CF'};
+  let spots=['3B','SS','2B','1B'].filter(k=>inf.pos[k]).map(k=>[k,inf.pos[k][0],inf.pos[k][1]]);
+  if(al.infSide==='right') spots=spots.map(([k,x,y])=>[swapIF[k],600-x,y]);       // drawn for the left side, flipped for the right
+  if(al.bunt) spots=spots.map(([k,x,y])=>(k==='3B'||k==='1B')?[k,HX+(x-HX)*.62,HY+(y-HY)*.62]:[k,x,y]);   // corners in
+  let ofs=['LF','CF','RF'].filter(k=>off.pos[k]).map(k=>[k,off.pos[k][0],off.pos[k][1]]);
+  if(al.of==='RED'&&al.ofSide==='right') ofs=ofs.map(([k,x,y])=>[swapOF[k],600-x,y]);
+  if(al.of==='GREEN'&&(al.bats==='R'||al.bats==='L')) ofs=ofs.map(([k,x,y])=>k==='CF'?[k,x+(al.bats==='R'?-24:24),y]:[k,x,y]);
+  return spots.concat(ofs);
 }
-function fielderMarks(al){
-  return fielderSpots(al).map(([lab,a,d])=>{ const [x,y]=pt(a,d); return `<g pointer-events="none"><circle cx="${x}" cy="${y}" r="11" fill="#fbfbf7" fill-opacity=".92" stroke="#26352d" stroke-width="1.5"/><text x="${x}" y="${y+3.5}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="11" fill="#26352d">${lab}</text></g>`; }).join('');
-}
+function posMark(lab,x,y,extra,big){ const r=big?19:12, fs=big?17:11.5; return `<g ${extra||'pointer-events="none"'}><circle cx="${x}" cy="${y}" r="${r}" fill="#fbfbf7" fill-opacity=".95" stroke="#26352d" stroke-width="${big?2.2:1.6}"/><text x="${x}" y="${y+fs*.36}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${fs}" fill="#26352d" pointer-events="none">${lab}</text></g>`; }
+function fielderMarks(al){ return fielderSpots(al).map(([lab,x,y])=>posMark(lab,x,y)).join(''); }
 function callBadges(al){
-  const o=OF_CALLS[al.of];
-  return `<span class="call">${IF_CALLS[al.inf].name}${al.side?' · '+al.side:''}</span> <span class="call of" style="--c:${o.col}">${o.name}${ofLabel(al)}</span>${al.bunt?' <span class="call">VERTICAL LINE</span>':''}`;
+  const o=ofCall(al.of);
+  return `<span class="call">${ifCall(al.inf).name}${al.side?' · '+al.side:''}</span> <span class="call of" style="--c:${o.col}">${o.name}${ofLabel(al)}</span>${al.bunt?` <span class="call">${esc(pbItem('infield','VERTICAL').name)}</span>`:''}`;
+}
+function alignLegend(){
+  const pb=PB(); const li=(it,col)=>`<li><b${col?` style="color:${esc(it.color||'')}"`:''}>${esc(it.name)}</b>${it.sign?` (${esc(it.sign)})`:''}: ${esc(it.what||'')}</li>`;
+  return `<div class="layout"><section class="card"><h3>Infield calls</h3><ul style="margin:0;padding-left:18px;font-size:15px">${pb.infield.map(x=>li(x)).join('')}</ul>
+    <p class="note" style="margin:8px 0 0">Picked from his grounders: U at 80%+ to one side (pull side only, when Bats is known), RECTANGLE at 65%+, DIAMOND for weak contact, SQUARE otherwise, VERTICAL LINE for bunters.</p>
+    <h3 style="margin-top:12px">Outfield colors</h3><ul style="margin:0;padding-left:18px;font-size:15px">${pb.outfield.map(x=>li(x,true)).join('')}</ul></section>
+  <section class="card"><h3>Situations (call these yourself)</h3><ul style="margin:0;padding-left:18px;font-size:15px">${(pb.situations||[]).map(x=>li(x)).join('')}</ul>
+    <h3 style="margin-top:12px">Bunt coverages</h3><ul style="margin:0;padding-left:18px;font-size:15px">${(pb.bunts||[]).map(x=>`<li>${esc(x.name)}</li>`).join('')}</ul>
+    <p style="margin:10px 0 0"><a class="btn sm" href="#defense">See or edit the playbook</a></p></section></div>`;
 }
 function viewAlign(M){
   const names=hitterNames(M).filter(n=>M.hitters[n]);
-  const rows=names.map(n=>{ const al=alignFor(n,M), i=pinfo(n), I=IF_CALLS[al.inf], O=OF_CALLS[al.of];
+  const rows=names.map(n=>{ const al=alignFor(n,M), i=pinfo(n), I=ifCall(al.inf), O=ofCall(al.of);
     return `<tr class="pick" data-hitter-open="${esc(n)}" tabindex="0"><td class="num">${esc(i.num||'')}</td><td><b>${esc(n)}</b>${i.pos?` <small style="color:var(--muted)">${esc(i.pos)}</small>`:''}</td>
       <td>${al.bats?esc(al.bats):'<span style="color:var(--muted)">—</span>'}</td>
       <td><span class="call">${I.name}</span>${al.side?` <small>${al.side}</small>`:''}<br><small style="color:var(--muted)">${I.what} · sign: ${I.sign}</small></td>
@@ -960,22 +1016,7 @@ function viewAlign(M){
   <div class="filters">${gameSeg(M)}</div>
   ${missing.length?`<p class="note" style="border-left:3px solid var(--hit);padding-left:8px"><b>No Bats yet for ${missing.length} hitter${missing.length===1?'':'s'}:</b> ${missing.map(esc).join(', ')}. Their calls use the side of the field he hits to. Add R / L / S in the Bats column of the Google Sheet to see pull and opposite-field calls.</p>`:''}
   <div class="tablewrap"><table class="aligntable"><thead><tr><th class="num">#</th><th>Hitter</th><th>Bats</th><th>Infield</th><th>Outfield</th><th>Bunt</th><th>Why</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No hitters for this selection.</td></tr>'}</tbody></table></div></section>
-  <div class="layout"><section class="card"><h3>Infield calls</h3><ul style="margin:0;padding-left:18px;font-size:15px">
-    <li><b>U</b> (field goal): extended shift, 80%+ of grounders to one side (not used for opposite-field hitters).</li>
-    <li><b>RECTANGLE</b> (wave arm): shift 1B/3B +1, 65%+ of grounders to one side.</li>
-    <li><b>DIAMOND</b> (in front of face): shallow, weak contact with nothing driven to the OF.</li>
-    <li><b>SQUARE</b> (chest): neutral / 5 over, everyone else.</li>
-    <li><b>VERTICAL LINE</b>: corners in for hitters who bunt.</li></ul>
-    <h3 style="margin-top:12px">Outfield colors</h3><ul style="margin:0;padding-left:18px;font-size:15px">
-    <li><b style="color:#c4573f">RED</b>: 60%+ of balls in the air to one side. Shows <b>pull</b> or <b>oppo</b> when Bats is filled in, otherwise <b>LF side</b> or <b>RF side</b>.</li>
-    <li><b style="color:#3f66b8">BLUE</b>: extra-base power, straight up and deep.</li>
-    <li><b style="color:#b8901f">YELLOW</b>: doesn’t drive it, shallow up.</li>
-    <li><b style="color:#3f8a55">GREEN</b>: neutral, everyone else.</li></ul></section>
-  <section class="card"><h3>Situations (call these yourself)</h3><ul style="margin:0;padding-left:18px;font-size:15px">
-    <li>Runner on 1st, less than 2 outs: <b>TRIANGLE</b> (DP depth), or <b>FIST</b> if he’s a shift hitter.</li>
-    <li>Runner on 3rd, need the out at home: <b>X</b> (infield in) or <b>HORIZONTAL LINE</b> (infield halfway).</li>
-    <li>Late, protecting a lead: <b>CIRCLE</b> (no 2B’s).</li>
-    <li>Bunt coverage: runner on 1st, Play 1 or 2; runner on 2nd, Plays 3–7.</li></ul></section></div>`;
+  ${alignLegend()}`;
 }
 /* ---------- Customize: logo, colors, team name ---------- */
 let custLogo=null;   // undefined = keep, '' = remove, data URL = new
@@ -1030,7 +1071,71 @@ function wireCustomize(){
     catch(e){ msg.className='err'; msg.textContent=(e.message||'Could not save.')+(/PIN|_Settings/.test(e.message||'')?'':' If this keeps happening, make sure the newest Apps Script is deployed.'); }
     finally{ val('cu-save').disabled=false; } };
 }
-const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,sprays:viewSprayGrid,align:viewAlign,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
+/* ---------- Defense tab: view and edit the playbook ---------- */
+let defEdit=null, defMode='start';
+const DEF_GROUPS=[['infield','Infield calls','Drawn for a hitter going to the left side (3B side). The site flips them for the right side.'],['outfield','Outfield colors','RED is drawn for the left side and flipped automatically. GREEN’s CF shades toward the pull side when Bats is known.'],['situations','Situations','Call these yourself based on runners, outs and score.'],['bunts','Bunt coverages','Starting spots, plus arrows showing where each player goes.']];
+function pbDiagram(it,g,i,editing){
+  const arrows=POS9.filter(k=>it.to&&it.to[k]&&it.pos[k]).map(k=>{ const [x1,y1]=it.pos[k],[x2,y2]=it.to[k]; return `<line data-arrow="${k}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1d1f22" stroke-width="3" stroke-dasharray="${g==='bunts'?'':'7 5'}" marker-end="url(#pbhead)" pointer-events="none"/>`; }).join('');
+  const marks=POS9.filter(k=>it.pos[k]).map(k=>{ const [x,y]=it.pos[k]; return posMark(k,0,0,`transform="translate(${x},${y})" data-k="${k}" ${editing?'class="pbdrag"':'pointer-events="none"'}`,true); }).join('');
+  return fieldSVG(`<defs><marker id="pbhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1d1f22"/></marker></defs>${arrows}${marks}`,esc(it.name)+' diagram');
+}
+function viewDefense(){
+  const editing=!!defEdit, pb=defEdit||PB();
+  const bar=editing?`<div class="defbar"><b>Editing the playbook</b>
+      <span class="seg" role="group" aria-label="What dragging does"><button type="button" data-dmode="start" aria-pressed="${defMode==='start'}">Move players</button><button type="button" data-dmode="to" aria-pressed="${defMode==='to'}">Draw where they go</button></span>
+      <button type="button" class="btn sm" id="def-clear">Clear arrows on…</button>
+      <input type="password" id="def-pin" placeholder="Edit PIN" autocomplete="off" style="width:110px">
+      <button type="button" class="btn primary" id="def-save">Save for everyone</button><button type="button" class="btn" id="def-cancel">Cancel</button><button type="button" class="btn" id="def-reset">Reset to defaults</button><span id="def-msg"></span></div>
+      <p class="note" style="margin:8px 0 0">${defMode==='start'?'Drag any player to his starting spot.':'Drag from a player to draw an arrow to where he goes. Drag him back onto himself to remove the arrow.'} Text changes are kept as you type. Nothing changes for other coaches until you tap Save.</p>`
+    :`<p style="margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn primary" id="def-edit">Edit playbook</button><span class="note" style="margin:0">Saving changes needs the Edit PIN from the sheet’s _Settings tab.</span></p>`;
+  const sections=DEF_GROUPS.map(([g,title,hint])=>{ const list=pb[g]||[];
+    const cards=list.map((it,i)=>{
+      const notes=String(it.notes||'').split('\n').filter(Boolean);
+      if(!editing) return `<article class="pbcard"><h3>${g==='outfield'?`<span class="call of" style="--c:${esc(it.color||'#666')}">${esc(it.name)}</span>`:esc(it.name)}${it.sign?` <small>· sign: ${esc(it.sign)}</small>`:''}</h3>${it.what?`<p class="pbwhat">${esc(it.what)}</p>`:''}<div class="pbdia">${pbDiagram(it,g,i,false)}</div>${notes.length?`<ul class="pbnotes">${notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}</article>`;
+      return `<article class="pbcard editing" data-g="${g}" data-i="${i}"><label>Name<input type="text" data-f="name" value="${esc(it.name)}"></label>
+        ${g==='bunts'?'':`<label>What it means<input type="text" data-f="what" value="${esc(it.what||'')}"></label>`}
+        ${g==='infield'||g==='situations'?`<label>Hand sign<input type="text" data-f="sign" value="${esc(it.sign||'')}"></label>`:''}
+        ${g==='outfield'?`<label>Color<input type="color" data-f="color" value="${esc(it.color||'#666666')}"></label>`:''}
+        <div class="pbdia" data-dia="${g}-${i}">${pbDiagram(it,g,i,true)}</div>
+        <label>${g==='bunts'?'Assignments (one per line)':'Notes (one per line)'}<textarea data-f="notes" rows="${g==='bunts'?5:2}">${esc(it.notes||'')}</textarea></label>
+        ${g==='bunts'?`<p style="margin:6px 0 0"><button type="button" class="btn sm" data-del="${i}">Delete this play</button></p>`:''}</article>`; }).join('');
+    return `<section class="below"><h2>${title}</h2><p class="note">${hint}</p><div class="pbgrid">${cards}</div>${editing&&g==='bunts'?'<p style="margin:12px 0 0"><button type="button" class="btn" id="def-add">Add a bunt play</button></p>':''}</section>`; }).join('');
+  const saved=DATA&&DATA.defense?'':'<p class="note" style="margin:8px 0 0">Showing the default playbook. Once someone saves changes, everyone sees your version.</p>';
+  return `<section class="below"><h2>Defensive playbook</h2>${bar}${editing?'':saved}</section>${sections}`;
+}
+function wireDefense(){
+  const q=s=>app.querySelector(s), qa=s=>app.querySelectorAll(s);
+  const ed=q('#def-edit'); if(ed) ed.onclick=()=>{ defEdit=JSON.parse(JSON.stringify(PB())); render(); };
+  if(!defEdit) return;
+  qa('[data-dmode]').forEach(b=>b.onclick=()=>{ defMode=b.dataset.dmode; render(); });
+  q('#def-cancel').onclick=()=>{ defEdit=null; render(); };
+  q('#def-reset').onclick=()=>{ if(!confirm('Reset every call and bunt play to the defaults? You still need to tap Save for everyone to keep it.')) return; defEdit=defDefault(); render(); };
+  q('#def-clear').onclick=()=>{ const nm=prompt('Clear all arrows on which play? Type its name exactly, or ALL.'); if(!nm) return; Object.values(defEdit).forEach(list=>(list||[]).forEach(it=>{ if(nm.trim().toUpperCase()==='ALL'||it.name.trim().toLowerCase()===nm.trim().toLowerCase()) it.to={}; })); render(); };
+  const add=q('#def-add'); if(add) add.onclick=()=>{ const base=defDefault().bunts[0]; defEdit.bunts.push({id:'b'+Date.now(),name:'New bunt play',what:'',sign:'',color:'',notes:'',pos:JSON.parse(JSON.stringify(base.pos)),to:{}}); render(); };
+  qa('[data-del]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.del; if(!confirm('Delete “'+defEdit.bunts[i].name+'”?')) return; defEdit.bunts.splice(i,1); render(); });
+  qa('.pbcard.editing').forEach(card=>{ const it=defEdit[card.dataset.g][+card.dataset.i];
+    card.querySelectorAll('[data-f]').forEach(inp=>inp.oninput=()=>{ it[inp.dataset.f]=inp.value; });
+    const svg=card.querySelector('svg.field'); svg.style.touchAction='none';
+    svg.querySelectorAll('.pbdrag').forEach(mk=>{ mk.onpointerdown=e=>{ e.preventDefault(); const k=mk.dataset.k; mk.setPointerCapture(e.pointerId);
+      const toSvg=ev=>{ const P=svg.createSVGPoint(); P.x=ev.clientX; P.y=ev.clientY; const r=P.matrixTransform(svg.getScreenCTM().inverse()); return [Math.round(Math.max(12,Math.min(588,r.x))),Math.round(Math.max(12,Math.min(492,r.y)))]; };
+      const line=()=>svg.querySelector(`[data-arrow="${k}"]`);
+      mk.onpointermove=ev=>{ if(!mk.hasPointerCapture(ev.pointerId)) return; const [x,y]=toSvg(ev);
+        if(defMode==='start'){ it.pos[k]=[x,y]; mk.setAttribute('transform',`translate(${x},${y})`); const l=line(); if(l){ l.setAttribute('x1',x); l.setAttribute('y1',y); } }
+        else { it.to=it.to||{}; it.to[k]=[x,y]; let l=line(); if(!l){ const [sx,sy]=it.pos[k]; l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('data-arrow',k); l.setAttribute('x1',sx); l.setAttribute('y1',sy); l.setAttribute('stroke','#1d1f22'); l.setAttribute('stroke-width','3'); l.setAttribute('marker-end','url(#pbhead)'); l.setAttribute('pointer-events','none'); svg.insertBefore(l,svg.querySelector('.pbdrag')); } l.setAttribute('x2',x); l.setAttribute('y2',y); } };
+      mk.onpointerup=ev=>{ mk.releasePointerCapture(ev.pointerId); mk.onpointermove=null; mk.onpointerup=null;
+        if(defMode==='to'&&it.to&&it.to[k]){ const [x1,y1]=it.pos[k],[x2,y2]=it.to[k]; if(Math.hypot(x2-x1,y2-y1)<18){ delete it.to[k]; const l=line(); if(l) l.remove(); } } };
+    }; });
+  });
+  q('#def-save').onclick=async()=>{ const msg=q('#def-msg'), pin=q('#def-pin').value.trim();
+    if(!pin){ msg.className='err'; msg.textContent='Enter the Edit PIN first.'; return; }
+    msg.className='note'; msg.textContent='Saving…'; q('#def-save').disabled=true;
+    try{ const res=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveDefense',pin,defense:defEdit})}); const j=await res.json();
+      if(!j.ok) throw new Error(j.error||'Could not save.');
+      DATA.defense=j.defense||defEdit; store.set(CACHE,DATA); defEdit=null; render();
+      const m2=document.querySelector('#app .below .note'); if(m2){ m2.className='ok'; m2.textContent='Saved. Every coach sees this playbook the next time they open the site.'; } }
+    catch(e){ msg.className='err'; msg.textContent=(e.message||'Could not save.')+(/PIN|_Settings/.test(e.message||'')?'':' Make sure the newest Apps Script is deployed for this sheet.'); q('#def-save').disabled=false; } };
+}
+const REPORT_VIEWS={plan:viewPlan,spray:viewSpray,sprays:viewSprayGrid,align:viewAlign,defense:viewDefense,counts:viewCounts,running:viewRunning,pitchers:viewPitchers,roster:viewRoster,print:viewPrint};
 /* ---------- all spray charts at once ---------- */
 function viewSprayGrid(M){
   const names=hitterNames(M), L=lineupOf(teamObj());
@@ -1076,7 +1181,7 @@ function viewPrint(M){
 }
 let printedFor='';
 function renderHead(v,t){
-  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['align','Alignment'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
+  const tabs=[['plan','Game plan'],['spray','Hitters & spray'],['sprays','Spray charts'],['align','Alignment'],['defense','Defense'],['counts','Count tendencies'],['running','Baserunning'],['pitchers','Pitchers'],['roster','Roster']];
   const labels=t?gameLabels(t):[];
   head.innerHTML=`<div class="topbar"><a class="brand" href="${esc(location.pathname)}">${brandLogo()?`<img class="brandlogo" src="${esc(brandLogo())}" alt="">`:''}<span>${esc(brandName())}</span></a><div class="toplinks">${DATA&&DATA.teams.length?`<label style="display:flex;align-items:center;gap:6px;color:var(--board-muted);font-size:14px">Team <select id="teamswitch" class="teamswitch" style="min-width:200px;background:rgba(255,255,255,.08);color:var(--board-ink);border-color:rgba(255,255,255,.22)"><option value="">Choose a team…</option>${DATA.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<option value="${esc(x.name)}" ${t&&x.name===t.name?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>`:''}${t&&t.games.length?`<a class="btn ghost" href="#print">Print / PDF</a>`:''}<a class="btn ghost" href="${esc(location.pathname)}">Scouting reports</a>${SETTINGS_ON?`<a class="btn ghost" href="#settings"${isSettingsView()?' aria-current="page"':''}>Settings</a>`:''}</div></div>
   ${t?`<h1>${esc(t.name)}</h1><p class="sub">${(()=>{ const sel=selectedIdx(t); return sel.length===t.games.length?`Scouting from ${t.games.length} game${t.games.length===1?'':'s'}${labels.length?': '+labels.map(esc).join(', '):''}`:`Using ${sel.length} of ${t.games.length} games: ${sel.map(i=>esc(labels[i])).join(', ')}`; })()}</p>`:(isSettingsView()?`<h1>Settings</h1><p class="sub">Logo, colors and team name for this site.</p>`:`<h1>Scouting reports</h1><p class="sub">Built from GameChanger play-by-play kept in your Google Sheet.</p>`)}
@@ -1094,11 +1199,12 @@ function render(){
   else if(!t) html=viewHome();
   else if(!t.games.length) html=`<section class="card" style="margin-top:24px"><h2>No games yet</h2><p>Add a game for ${esc(t.name)} in the Google Sheet, then open this link again.</p></section>`;
   else { try{ const M=getModel(); if(state.game!=='all'&&!M.games.includes(state.game)) state.game='all';
-      html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+(v==='roster'?'':`<div style="margin-top:16px">${lineupBar()}</div>`)+REPORT_VIEWS[v](M); }
+      html=(M.warnings.length?`<section class="card" style="margin-top:24px;border-left:4px solid var(--cs)"><h3>Some games couldn’t be read</h3><ul style="margin:0;padding-left:18px">${M.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></section>`:'')+(v==='roster'||v==='defense'?'':`<div style="margin-top:16px">${lineupBar()}</div>`)+REPORT_VIEWS[v](M); }
     catch(e){ html=`<section class="card" style="margin-top:24px"><h2>This report couldn’t be built</h2><p>${esc(e.message)}</p><p class="note">Check that each play-by-play was pasted in full in the Google Sheet.</p></section>`; } }
   app.innerHTML=html+`<footer>Built from GameChanger play-by-play. Logs that stop mid-game give partial numbers, so treat every read as a lead to confirm. Spray lines: solid line drive, short dashes ground ball, long dashes fly ball or pop-up, dots bunt. Circle normal contact, triangle hard hit. Scoring: 1B 2B 3B HR, BB, HBP, K swinging, ꓘ looking, FC, E#, double plays by position (4-6-3 DP), fielder numbers (6-3, F8, L3, P1).</footer>`;
   tip.style.display='none'; bindTips(app); wire(v);
   if(isSettingsView()&&document.getElementById('cu-save')) wireCustomize();
+  if(v==='defense'&&!isSettingsView()) wireDefense();
   const lb=app.querySelector('details.lineup'); if(lb) lb.ontoggle=()=>{ lineupOpen=lb.open; const e=lb.querySelector('.ledit'); if(e) e.textContent=lb.open?'Done':'Choose players'; };
   app.querySelectorAll('[data-ltoggle]').forEach(c=>c.onchange=()=>{ const t=teamObj(), pool=lineupPool(); let L=lineupOf(t)||pool.slice(); const n=c.dataset.ltoggle;
     if(c.checked){ if(!L.includes(n)) L.push(n); } else { if(L.filter(x=>pool.includes(x)).length<=1){ c.checked=true; return; } L=L.filter(x=>x!==n); }
